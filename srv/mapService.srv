@@ -1,8 +1,0 @@
-string name
----
-int32 minX
-int32 maxX
-int32 minY
-int32 maxY
-int32 nObs
-pos[] obs
