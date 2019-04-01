@@ -21,7 +21,7 @@ inv_J2 = np.array([[1.0/r,0],[0,1.0/r]]) ###Inversa de la matriz J2 con las rest
 #ka = 0.99
 #kb = 0.5 ##Constantes usadas para el control del robot
 ka = 1.2
-kb = 0.3
+kb = 0.5
 #kp = 0.3
 kp = 0.3
 pub = rospy.Publisher('/motorsVel', Float32MultiArray, queue_size=10)  ##pub permite publicar las velocidades de cada motor
