@@ -158,7 +158,6 @@ def control():  ## Metodo que realiza los calculos de la ley de control
 			w = (ka*alpha) + (kb*(beta))
 		vec = inv_J2.dot(J1.dot(R(lastheta).dot(np.array([x,y,w])))) ## Usando el modelo cinematico se calcula la velocidad de cada rueda
 		time.sleep(0.2)
-	return bandera
 
 if __name__ == '__main__':
 	global bandera, posix, posiy, posTeox, posTeoy, lastheta, ant, tiempoSimu, error, fin, xfin, yfin, thetafin
