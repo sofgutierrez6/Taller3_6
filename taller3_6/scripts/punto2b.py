@@ -53,10 +53,10 @@ def crearCuadricula():
 		r = [obs1[2]/0.1 , obs2[2]/0.1 , obs3[2]/0.1 , obs4[2]/0.1 , obs5[2]/0.1]
 		for i in range(len(x)):
 			matriz[int(x[i])][int(y[i])] = 1
-			for j in range(int(x[i]-r[i]-robot), int(x[i]+r[i]+robot)):
-				for k in range(int(y[i]-r[i]-robot), int(y[i]+r[i]+robot)):
-					dist = np.linalg.norm(np.array([x[i],y[i]]) - np.array([j+0.1,k+0.1]))
-					if dist <= r[i]:
+			for j in range(int(x[i]-r[i]-robot)-1, int(x[i]+r[i]+robot)):
+				for k in range(int(y[i]-r[i]-robot)-1, int(y[i]+r[i]+robot)):
+					dist = np.linalg.norm(np.array([x[i],y[i]]) - np.array([j+0.5,k+0.5]))
+					if dist <= r[i]+robot:
 						matriz[j][k] = 1
 						x.append(j)
 						y.append(k)
