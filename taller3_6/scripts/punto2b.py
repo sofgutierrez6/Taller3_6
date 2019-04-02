@@ -3,6 +3,7 @@ import rospy
 from std_msgs.msg import Float32MultiArray, Float32
 from pylab import *
 import matplotlib.pyplot as plt
+import threading
 
 robot = 0
 
@@ -43,24 +44,40 @@ def obstacle5(data):
 	obs5 = data.data
 	
 def crearCuadricula():
-	global obs1, obs2, obs3, obs4, obs5
-	matriz = [["."  for i in range(500)]for j in range(500)]
-	x = [round((25-obs1[0])/0.1) , round((25-obs2[0])/0.1) , round((25-obs3[0])/0.1) , round((25-obs4[0])/0.1) , round((25-obs5[0])/0.1)]
-	y = [round((25-obs1[1])/0.1) , round((25-obs2[1])/0.1) , round((25-obs3[1])/0.1) , round((25-obs4[1])/0.1) , round((25-obs5[1])/0.1)]
-	r = [round(obs1[2]/0.1) , round(obs2[2]/0.1) , round(obs3[2]/0.1) , round(obs4[2]/0.1) , round(obs5[2]/0.1)]
+	global obs1, obs2, obs3, obs4, obs5, xplot, yplot
+	matriz = [[0  for i in range(500)]for j in range(500)]
+	x = [(25-obs1[0])/0.1 , (25-obs2[0])/0.1 , (25-obs3[0])/0.1 , (25-obs4[0])/0.1 , (25-obs5[0])/0.1]
+	y = [(25-obs1[1])/0.1 , (25-obs2[1])/0.1 , (25-obs3[1])/0.1 , (25-obs4[1])/0.1 , (25-obs5[1])/0.1]
+	r = [obs1[2]/0.1 , obs2[2]/0.1 , obs3[2]/0.1 , obs4[2]/0.1 , obs5[2]/0.1]
 	for i in range(len(x)):
-		matriz[int(x[i])][int(y[i])] = "*"
+		matriz[int(x[i])][int(y[i])] = 1
 		for j in range(int(x[i]-r[i]-robot), int(x[i]+r[i]+robot+1)):
 			for k in range(int(y[i]-r[i]-robot), int(y[i]+r[i]+robot+1)):
-				matriz[j][k] = "*"
-	for i in range(500):
+				matriz[j][k] = 1
+				x.append(j)
+				y.append(k)
+	xplot = list(map(lambda x: 25 - (0.1*x), x))
+	yplot = list(map(lambda x: 25 - (0.1*x), y))
+	'''for i in range(500):
 		for j in range(500):
 			print(matriz[i][j]),
-		print""	
+		print""	'''
+
+def plotMap():
+	global xplot, yplot
+	while True:
+		plt.clf()
+		plt.plot(xplot, yplot, 'p')
+		plt.draw()
+		plt.pause(0.8)
 			
 				
 if __name__ == '__main__':
+	global xplot, yplot, r
+	xplot = [0]
+	yplot = [0] 
 	try:
+		threading.Thread(target=plotMap).start()
 		arrancar()
 	except rospy.ServiceException:
 		pass
