@@ -20,10 +20,10 @@ J2 = np.array([[r,0],[0,r],[0,0]])  ###Matriz J2 con los radios y la restriccion
 inv_J2 = np.array([[1.0/r,0],[0,1.0/r]]) ###Inversa de la matriz J2 con las restricciones de rodamiento
 #ka = 0.99
 #kb = 0.5 ##Constantes usadas para el control del robot
-ka = 1.2
-kb = 0.5
+ka = 0.99
+kb = 1.6
 #kp = 0.3
-kp = 0.3
+#kp = 0.5
 pub = rospy.Publisher('/motorsVel', Float32MultiArray, queue_size=10)  ##pub permite publicar las velocidades de cada motor
 
 def arrancar():
@@ -124,17 +124,17 @@ def invR(theta): ##funcion que retorna la inversa de la matriz de rotacion
 	return np.array([[math.cos(theta),-math.sin(theta),0],[math.sin(theta),math.cos(theta),0],[0,0,1]])
 
 def control():  ## Metodo que realiza los calculos de la ley de control 
-	global posix, posiy, xfin, yfin, thetafin, lastheta, vec, bandera, fin, kb
+	global posix, posiy, xfin, yfin, thetafin, lastheta, vec, bandera, fin, primero
+	time.sleep(1)
 	while not bandera:
 		dy = yfin-posiy[-1]
 		dx = xfin-posix[-1]   ##Se calculan los errores en coordenadas cartesiana
 		dtheta = lastheta - thetafin
-		rho = math.sqrt((dx)**2 + (dy)**2)
-		v = kp * rho									##Se calculan los errores en coordenadas esfericas y se calcula la velocidad de acuerdo con kp
+		rho = math.sqrt((dx)**2 + (dy)**2)		##Se calculan los errores en coordenadas esfericas y se calcula la velocidad de acuerdo con kp
 		#alpha = -dtheta + math.atan2(dy,dx)
 		#beta = -dtheta - alpha
-		beta = -math.atan2(dy,dx) + thetafin	#Se calculan los errores en coordenadas esfericas y se calcula la velocidad de acuerdo con kp
-		alpha = math.atan2(dy,dx) - lastheta
+		alpha = -dtheta + math.atan2(dy,dx)	#Se calculan los errores en coordenadas esfericas y se calcula la velocidad de acuerdo con kp
+		beta = -dtheta - alpha
 		if (alpha >= math.pi):
 			alpha = alpha - 2*pi
 		elif (alpha <= -math.pi):
@@ -143,24 +143,31 @@ def control():  ## Metodo que realiza los calculos de la ley de control
 			beta = beta - 2*pi
 		elif (beta <= -math.pi):
 			beta = beta + 2*pi
-		if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
-			v = -v
+		if (primero and alpha != 0):
+			if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
+				kp = -0.18
+			else:
+				kp = 0.18
+			primero = False
+		elif(alpha == 0):
+			kp = 0
+		v = kp * rho
 		if(rho < 0.2):
 		###Si el robot esta muy cerca del objeivo se detiene y se alinea
-			v = 0
+			v = 2*v
 			x = v*math.cos(lastheta)
 			y = v*math.sin(lastheta)
 			w = (0.3*(-dtheta))
 			fin = True
 		else:		
-			x = v*math.cos(dtheta)
-			y = v*math.sin(dtheta)
+			x = v*math.cos(lastheta)
+			y = v*math.sin(lastheta)
 			w = (ka*alpha) + (kb*(beta))
 		vec = inv_J2.dot(J1.dot(R(lastheta).dot(np.array([x,y,w])))) ## Usando el modelo cinematico se calcula la velocidad de cada rueda
 		time.sleep(0.2)
 
 if __name__ == '__main__':
-	global bandera, posix, posiy, posTeox, posTeoy, lastheta, ant, tiempoSimu, error, fin, xfin, yfin, thetafin
+	global bandera, posix, posiy, posTeox, posTeoy, lastheta, ant, tiempoSimu, error, fin, xfin, yfin, thetafin, primero 
 	posTeox = []
 	posTeoy = []
 	posix = []
@@ -168,7 +175,7 @@ if __name__ == '__main__':
 	tiempoSimu = []
 	error=[]
 	vec = [0,0]							##Se les da valor inicial a las variables usadas como globales a lo largo de todo el codigo
-	lastheta = -math.pi
+	lastheta = -math.pi/2
 	posix.append(0)
 	posiy.append(0)
 	posTeox.append(0)
@@ -176,9 +183,10 @@ if __name__ == '__main__':
 	ant = -1
 	bandera = False
 	fin = False
-	xfin = 1
+	primero = True
+	xfin = 0
 	yfin = 0
-	thetafin = math.pi
+	thetafin = -math.pi/2
 	try:
 		print("Presione una tecla (Esc para salir):")
 		threading.Thread(target=ThreadInputs).start()
