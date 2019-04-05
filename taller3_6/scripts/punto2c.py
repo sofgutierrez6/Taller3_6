@@ -2,9 +2,7 @@
 import rospy
 from std_msgs.msg import Float32MultiArray, Float32
 from pylab import *
-from graphviz import Digraph
 from pynput.keyboard import Key, Listener 
-import matplotlib.pyplot as plt
 import threading
 import time
 
@@ -14,7 +12,6 @@ def arrancar():
 	rospy.init_node('punto2b', anonymous = True)
 	rospy.Subscriber('/obstacles', Float32MultiArray ,obstacles)
 	tasa = rospy.Rate(10)
-	grafo()
 	try:
 		while not rospy.is_shutdown():
 			tasa.sleep()
@@ -26,9 +23,13 @@ def obstacles(data):
 	obs = data.data
 	
 def crearCuadricula():
-	global obs, xplot, yplot, matriz
+	global obs, matriz
 	while True:
 		matriz = [[0  for i in range(500)]for j in range(500)]
+		matNod = []
+		for i in range(500):
+			for j in range(500):
+				matNod.append(Nodo([i , j]))
 		x = [(5-obs[0])/0.1 , (5-obs[1])/0.1 , (5-obs[2])/0.1 , (5-obs[3])/0.1 , (5-obs[4])/0.1]
 		y = [(5-obs[5])/0.1 , (5-obs[6])/0.1 , (5-obs[7])/0.1 , (5-obs[8])/0.1 , (5-obs[9])/0.1]
 		r = [obs[10]/0.1 , obs[11]/0.1 , obs[12]/0.1 , obs[13]/0.1 , obs[14]/0.1]
@@ -41,6 +42,16 @@ def crearCuadricula():
 						matriz[j][k] = 1
 						x.append(j)
 						y.append(k)
+		for nod in matNod:
+			posN = nod.pos
+			if (matriz[posN[0]][posN[1]] == 0):
+				for i in range(posN[0] - 1, posN[0] + 1 ,1):
+					for j in range(posN[1] - 1, posN[1] + 1 ,1):
+						if (i >= 0 and i <= 499 and j >= 0 and j <= 499):
+							if (matriz[i][j] == 0 and not i == posN[0] and not j == posN[1]):
+								print i,j,posN
+								nod.agregarVecinos(matNod[i+j])
+				print "--"
 		xplot = list(map(lambda x: 5 - (0.1*x), x))
 		yplot = list(map(lambda x: 5 - (0.1*x), y))
 		'''for i in range(500):
@@ -50,35 +61,7 @@ def crearCuadricula():
 		if (bandera):
 			return False
 		time.sleep(0.2)
-		
-def grafo():
-	global matriz, bandera
-	time.sleep(3)
-	dot = Digraph(comment = 'Mapa')
-	for i in range(50,105,5):
-		for j in range(50,105,5):
-			if (matriz[i][j] == 0):
-				dot.node(str(i)+","+str(j) , str(-5+(0.1*i))+","+str(-5+(0.1*j)))
-	for i in range(50,100,5):
-		for j in range(50,100,5):
-			for k in range(i-5,i+10,5):
-				for m in range(j-5,j+10,5):
-					if (matriz[i][j] == 0 and matriz[k][m] == 0 and k >= 50 and k <= 100 and m >= 50 and m <= 100 and (k != i and m != j)):
-						dot.edge(str(i)+","+str(j) , str(k)+","+str(m))
-	dot.render('prueba.gv', view=True) 
-	print(dot.source)
 				
-
-def plotMap():
-	global xplot, yplot, bandera
-	while True:
-		plt.clf()
-		plt.plot(xplot, yplot, 'p')
-		plt.draw()
-		if (bandera):
-			plt.close()
-			return False
-		plt.pause(0.8)
 		
 def ThreadInputs():
 	with Listener(on_press = keypress) as listener:
@@ -89,18 +72,41 @@ def keypress(key):
 	if key == Key.esc:
 		bandera = True 	##Se usa la tecla Esc para terminar los diferentes hilos implementados
 		return False
-			
+
+class Nodo:
+	def __init__(self, pos):
+		self.pos = pos
+		self.coord = [5 - (0.1*pos[0]) , 5 - (0.1*pos[1])]
+		costo = 1000000000
+		self.vecinos = []
+		self.objetivo = False
+		self.actual = False
+		
+	def defHeu(self, pos_f):
+		self.h = math.sqrt((self.pos[0]-pos_f[0])**2 + (self.pos[1]-pos_f[1])**2) 
+		return self.h
+		
+	def asignarPadre(self, padre):
+		self.padre = padre
+	
+	def cambiarCostoActual(self, costo):
+		self.costo = costo
+	
+	def agregarVecinos(self, vecino):
+		self.vecinos.append(vecino)
+		
+	def esActual(self, actual):
+		self.actual = actual
+		
+	def esObejtivo(self, objetivo):
+		self.objetivo = objetivo
 				
 if __name__ == '__main__':
-	global xplot, yplot, obs, bandera, matriz
-	xplot = [0]
-	yplot = [0]
+	global xplot, yplot, obs, bandera
 	obs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 	bandera = False
-	matriz = [[0  for i in range(500)]for j in range(500)]
 	try:
 		threading.Thread(target=ThreadInputs).start()
-		threading.Thread(target=plotMap).start()
 		threading.Thread(target=crearCuadricula).start()
 		arrancar()
 	except rospy.ServiceException:

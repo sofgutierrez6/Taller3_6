@@ -145,9 +145,9 @@ def control():  ## Metodo que realiza los calculos de la ley de control
 			beta = beta + 2*pi
 		if (primero and alpha != 0):
 			if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
-				kp = -0.18
+				kp = -0.3
 			else:
-				kp = 0.18
+				kp = 0.3
 			primero = False
 		elif(alpha == 0):
 			kp = 0
