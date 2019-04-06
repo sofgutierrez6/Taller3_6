@@ -29,8 +29,8 @@ def crearCuadricula():
 	global obs, xplot, yplot, matriz
 	while True:
 		matriz = [[0  for i in range(500)]for j in range(500)]
-		x = [(5-obs[0])/0.1 , (5-obs[1])/0.1 , (5-obs[2])/0.1 , (5-obs[3])/0.1 , (5-obs[4])/0.1]
-		y = [(5-obs[5])/0.1 , (5-obs[6])/0.1 , (5-obs[7])/0.1 , (5-obs[8])/0.1 , (5-obs[9])/0.1]
+		x = [(5+obs[0])/0.1 , (5+obs[1])/0.1 , (5+obs[2])/0.1 , (5+obs[3])/0.1 , (5+obs[4])/0.1]
+		y = [(5+obs[5])/0.1 , (5+obs[6])/0.1 , (5+obs[7])/0.1 , (5+obs[8])/0.1 , (5+obs[9])/0.1]
 		r = [obs[10]/0.1 , obs[11]/0.1 , obs[12]/0.1 , obs[13]/0.1 , obs[14]/0.1]
 		for i in range(len(x)):
 			matriz[int(x[i])][int(y[i])] = 1
@@ -41,8 +41,8 @@ def crearCuadricula():
 						matriz[j][k] = 1
 						x.append(j)
 						y.append(k)
-		xplot = list(map(lambda x: 5 - (0.1*x), x))
-		yplot = list(map(lambda x: 5 - (0.1*x), y))
+		xplot = list(map(lambda x: -5 + (0.1*x), x))
+		yplot = list(map(lambda x: -5 + (0.1*x), y))
 		'''for i in range(500):
 			for j in range(500):
 				print(matriz[i][j]),
@@ -63,7 +63,7 @@ def grafo():
 		for j in range(50,100,5):
 			for k in range(i-5,i+10,5):
 				for m in range(j-5,j+10,5):
-					if (matriz[i][j] == 0 and matriz[k][m] == 0 and k >= 50 and k <= 100 and m >= 50 and m <= 100 and (k != i and m != j)):
+					if (matriz[i][j] == 0 and matriz[k][m] == 0 and k >= 50 and k <= 100 and m >= 50 and m <= 100 and not ((abs(k-i) + abs(m-j))==0)):
 						dot.edge(str(i)+","+str(j) , str(k)+","+str(m))
 	dot.render('prueba.gv', view=True) 
 	print(dot.source)
