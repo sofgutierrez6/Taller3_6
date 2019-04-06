@@ -111,40 +111,50 @@ def Astar(xfin,yfin):
 	pos_f = [xfin,yfin]
 	goal = buscarNodo(xfin,yfin)
 	goal.esObjetivo(True)
-	nodos = []
+	nod = []
 	for fil in matNod:
-		for nod in fil:
-			nodos.append(nod)
+		for nodes in fil:
+			nod.append(nodes)
 	explorados = []
 	actual = buscarNodo(0,0)
 	actual.asignarPadre(None)
 	actual.cambiarCosto(actual.defHeu(pos_f))
-	costos = {actual : actual.costo}
-	nodos.remove(actual)
-	explorados.append(actual)
-	costos[actual] = 0
-	while not actual.objetivo and not bandera:
+	costos = {actual : 0}
+	print 'entra'
+	rutax = []
+	rutay = []
+	while not len(nod) == 0 and not bandera:
+		actual = buscarMejor(nod)
+		explorados.append(actual)
+		nod.remove(actual)
+		if actual.objetivo:
+			break
 		vecinos = actual.vecinos
 		for vecino in vecinos:
 			costo = costos[actual] + 0.1
 			if vecino not in explorados or costo < costos[vecino]:
 				costos[vecino] = costo
 				vecino.cambiarCosto(costo + vecino.defHeu(pos_f))
-				explorados.append(vecino)
 				vecino.asignarPadre(actual)
-		actual = buscarMejor(nodos)
-		nodos.remove(actual)
-	rutax = []
-	rutay = []
 	
+	x = []
+	y  = []
 	while actual.padre != None:
 		coord2 = actual.coord
 		rutax.append(coord2[0])
 		rutay.append(coord2[1])
+		plt.clf()
+		plt.plot(rutax,rutay,'p')
+		plt.draw()
+		plt.pause(0.8)
 		actual = actual.padre
-	
-	plt.plot(rutax, rutay)
+	for vecino in explorados:
+		x.append(vecino.coord[0])
+		y.append(vecino.coord[1])
+	plt.plot(x, y,'p')
 	plt.show()
+
+
 def buscarNodo(x,y):
 	global matNod
 	a = round((5+x)/0.1)

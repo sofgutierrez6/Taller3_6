@@ -167,7 +167,7 @@ def control():  ## Metodo que realiza los calculos de la ley de control
 		time.sleep(0.2)
 
 if __name__ == '__main__':
-	global bandera, posix, posiy, posTeox, posTeoy, lastheta, ant, tiempoSimu, error, fin, xfin, yfin, thetafin, primero 
+	global bandera, posix, posiy, posTeox, posTeoy, lastheta, ant, tiempoSimu, error, fin, xfin, yfin, thetafin, primero
 	posTeox = []
 	posTeoy = []
 	posix = []
@@ -195,4 +195,3 @@ if __name__ == '__main__':
 		arrancar()
 	except rospy.ServiceException:
 		pass
-
