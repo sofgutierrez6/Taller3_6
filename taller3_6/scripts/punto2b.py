@@ -9,7 +9,7 @@ import threading
 import time
 
 robot = 0
-
+#Metodo de inicializacion 
 def arrancar():
 	rospy.init_node('punto2b', anonymous = True)
 	rospy.Subscriber('/obstacles', Float32MultiArray ,obstacles)
@@ -29,6 +29,7 @@ def crearCuadricula():
 	global obs, xplot, yplot, matriz
 	while True:
 		matriz = [[0  for i in range(500)]for j in range(500)]
+		#Se obtienen las posiciones del 
 		x = [(5+obs[0])/0.1 , (5+obs[1])/0.1 , (5+obs[2])/0.1 , (5+obs[3])/0.1 , (5+obs[4])/0.1]
 		y = [(5+obs[5])/0.1 , (5+obs[6])/0.1 , (5+obs[7])/0.1 , (5+obs[8])/0.1 , (5+obs[9])/0.1]
 		r = [obs[10]/0.1 , obs[11]/0.1 , obs[12]/0.1 , obs[13]/0.1 , obs[14]/0.1]
