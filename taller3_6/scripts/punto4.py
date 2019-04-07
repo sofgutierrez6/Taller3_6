@@ -20,8 +20,6 @@ J2 = np.array([[r,0],[0,r],[0,0]])  ###Matriz J2 con los radios y la restriccion
 inv_J2 = np.array([[1.0/r,0],[0,1.0/r]]) ###Inversa de la matriz J2 con las restricciones de rodamiento
 #ka = 0.99
 #kb = 0.5 ##Constantes usadas para el control del robot
-ka = 0.99
-kb = 1.6
 #kp = 0.3
 #kp = 0.5
 pub = rospy.Publisher('/motorsVel', Float32MultiArray, queue_size=10)  ##pub permite publicar las velocidades de cada motor
@@ -145,9 +143,13 @@ def control():  ## Metodo que realiza los calculos de la ley de control
 			beta = beta + 2*pi
 		if (primero and alpha != 0):
 			if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
-				kp = -0.3
+				kp = -0.05
+				ka = -0.1
+				kb = -0.4
 			else:
-				kp = 0.3
+				kp = 0.05
+				ka = 0.6
+				kb = 0.1
 			primero = False
 		elif(alpha == 0):
 			kp = 0
