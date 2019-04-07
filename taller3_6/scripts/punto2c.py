@@ -39,8 +39,8 @@ def crearCuadricula():
 	global obs, matriz, matNod
 	matriz = [[0  for i in range(500)]for j in range(500)]
 	matNod = [[Nodo([i , j]) for i in range(500)]for j in range(500)]
-	x = [(10+obs[0])/0.1 , (10+obs[1])/0.1 , (10+obs[2])/0.1 , (10+obs[3])/0.1 , (10+obs[4])/0.1]
-	y = [(10+obs[5])/0.1 , (10+obs[6])/0.1 , (10+obs[7])/0.1 , (10+obs[8])/0.1 , (10+obs[9])/0.1]
+	x = [(10 + obs[0])/0.1 , (10 + obs[1])/0.1 , (10 + obs[2])/0.1 , (10 + obs[3])/0.1 , (10 + obs[4])/0.1]
+	y = [(10 - obs[5])/0.1 , (10 - obs[6])/0.1 , (10 - obs[7])/0.1 , (10 - obs[8])/0.1 , (10 - obs[9])/0.1]
 	r = [obs[10]/0.1 , obs[11]/0.1 , obs[12]/0.1 , obs[13]/0.1 , obs[14]/0.1]
 	for i in range(len(x)):
 		matriz[int(x[i])][int(y[i])] = 1
@@ -79,7 +79,7 @@ def keypress(key):
 class Nodo:
 	def __init__(self, pos):
 		self.pos = pos
-		self.coord = [-10 + (0.1*pos[0]) , -10 + (0.1*pos[1])]
+		self.coord = [10 + (0.1*pos[0]) , -10 + (0.1*pos[1])]
 		self.costo = 1000000000
 		self.vecinos = []
 		self.objetivo = False
@@ -125,7 +125,6 @@ def Astar(xfin,yfin):
 	print 'entra'
 	rutax = []
 	rutay = []
-	print len(nod) , bandera
 	while not len(nod) == 0 and not bandera:
 		actual = buscarMejor(nod)
 		nod.remove(actual)
@@ -153,7 +152,6 @@ def Astar(xfin,yfin):
 	y  = []
 	rutax = []
 	rutay = []
-	actual = goal
 	while actual.padre != None:
 		coord2 = actual.coord
 		rutax.append(coord2[0])
@@ -167,12 +165,9 @@ def Astar(xfin,yfin):
 
 def buscarNodo(x,y):
 	global matNod
-	a = round((10+x)/0.1)
-	b = round((10+y)/0.1)
-	for fil in matNod:
-		for nod in fil:
-			if (nod.pos == [a,b]):
-				return nod
+	a = int(round((10+x)/0.1))
+	b = int(round((10-y)/0.1))
+	return matNod[a][b]
 				
 def buscarMejor(nodos):
 	cost = 10000000
