@@ -8,7 +8,7 @@ import threading
 import time
 import sys 
 
-robot = 0
+robot = 2
 
 def arrancar():
 	rospy.init_node('punto2c', anonymous = True)
@@ -37,11 +37,11 @@ def obstacles(data):
 	
 def crearCuadricula():
 	global obs, matriz, matNod
-	matriz = [[0  for i in range(500)]for j in range(500)]
-	matNod = [[Nodo([i , j]) for i in range(500)]for j in range(500)]
-	x = [(10 + obs[0])/0.1 , (10 + obs[1])/0.1 , (10 + obs[2])/0.1 , (10 + obs[3])/0.1 , (10 + obs[4])/0.1]
-	y = [(10 - obs[5])/0.1 , (10 - obs[6])/0.1 , (10 - obs[7])/0.1 , (10 - obs[8])/0.1 , (10 - obs[9])/0.1]
-	r = [obs[10]/0.1 , obs[11]/0.1 , obs[12]/0.1 , obs[13]/0.1 , obs[14]/0.1]
+	matriz = [[0  for i in range(200)]for j in range(200)]
+	matNod = [[Nodo([i , j]) for i in range(200)]for j in range(200)]
+	x = [(5 + obs[0])/0.25 , (5 + obs[1])/0.25 , (5 + obs[2])/0.25 , (5 + obs[3])/0.25 , (5 + obs[4])/0.25]
+	y = [(5 + obs[5])/0.25 , (5 + obs[6])/0.25 , (5 + obs[7])/0.25 , (5 + obs[8])/0.25 , (5 + obs[9])/0.25]
+	r = [obs[10]/0.25 , obs[11]/0.25 , obs[12]/0.25 , obs[13]/0.25 , obs[14]/0.25]
 	for i in range(len(x)):
 		matriz[int(x[i])][int(y[i])] = 1
 		for j in range(int(x[i]-r[i]-robot)-1, int(x[i]+r[i]+robot+1)):
@@ -57,7 +57,7 @@ def crearCuadricula():
 			if (matriz[posN[0]][posN[1]] == 0):
 				for i in range(posN[0] - 1, posN[0] + 2 ,1):
 					for j in range(posN[1] - 1, posN[1] + 2 ,1):
-						if (i >= 0 and i <= 499 and j >= 0 and j <= 499):
+						if (i >= 0 and i <= 199 and j >= 0 and j <= 199):
 							if (matriz[j][i] == 0 and not ((abs(i - posN[0]) + abs(j - posN[1])) == 0)):
 								nod2.agregarVecinos(matNod[j][i])
 	if (bandera):
@@ -79,9 +79,10 @@ def keypress(key):
 class Nodo:
 	def __init__(self, pos):
 		self.pos = pos
-		self.coord = [10 + (0.1*pos[0]) , -10 + (0.1*pos[1])]
+		self.coord = [-5 + (0.25*pos[0]) , -5 + (0.25*pos[1])]
 		self.costo = 1000000000
 		self.vecinos = []
+
 		self.objetivo = False
 		self.visitado = False
 		self.padre = None
@@ -112,6 +113,7 @@ def Astar(xfin,yfin):
 	pos_f = [xfin,yfin]
 	goal = buscarNodo(xfin,yfin)
 	goal.esObjetivo(True)
+	print goal.coord
 	nod = []
 	for fil in matNod:
 		for nodes in fil:
@@ -128,11 +130,10 @@ def Astar(xfin,yfin):
 	while not len(nod) == 0 and not bandera:
 		actual = buscarMejor(nod)
 		nod.remove(actual)
-		print actual.coord
-		coord2 = actual.coord
+		'''coord2 = actual.coord
 		rutax.append(coord2[0])
 		rutay.append(coord2[1])
-		'''plt.clf()
+		plt.clf()
 		plt.plot(rutax,rutay,'p')
 		plt.draw()
 		plt.pause(0.5)'''
@@ -141,7 +142,7 @@ def Astar(xfin,yfin):
 			break
 		vecinos = actual.vecinos
 		for vecino in vecinos:
-			costo = costos[actual] + 0.1
+			costo = costos[actual] + 0.25
 			if vecino not in explorados or costo < costos[vecino]:
 				costos[vecino] = costo
 				vecino.cambiarCosto(costo + vecino.defHeu(pos_f))
@@ -165,8 +166,8 @@ def Astar(xfin,yfin):
 
 def buscarNodo(x,y):
 	global matNod
-	a = int(round((10+x)/0.1))
-	b = int(round((10-y)/0.1))
+	a = int(round((5 + x)/0.25))
+	b = int(round((5 + y)/0.25))
 	return matNod[a][b]
 				
 def buscarMejor(nodos):
