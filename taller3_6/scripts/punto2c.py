@@ -123,7 +123,7 @@ def Astar(xfin,yfin):
 	rutay = []
 	while not len(explorados) == 0 and not bandera:
 		actual = buscarMejor(explorados)
-		explorados.remove(actual)
+		explorados = []
 		actual.esActual(True)
 		coord2 = actual.coord
 		rutax.append(coord2[0])
