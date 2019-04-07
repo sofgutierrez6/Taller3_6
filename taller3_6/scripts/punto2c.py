@@ -52,8 +52,7 @@ def crearCuadricula():
 					x.append(j)
 					y.append(k)
 	for nod in matNod:
-		listN = nod
-		for nod2 in listN:
+		for nod2 in nod:
 			posN = nod2.pos
 			if (matriz[posN[0]][posN[1]] == 0):
 				for i in range(posN[0] - 1, posN[0] + 2 ,1):
@@ -85,6 +84,8 @@ class Nodo:
 		self.vecinos = []
 		self.objetivo = False
 		self.actual = False
+		self.padre = None
+		self.h = 100000000
 		
 	def defHeu(self, pos_f):
 		self.h = math.sqrt((self.coord[0]-pos_f[0])**2 + (self.coord[1]-pos_f[1])**2) 
@@ -111,35 +112,19 @@ def Astar(xfin,yfin):
 	pos_f = [xfin,yfin]
 	goal = buscarNodo(xfin,yfin)
 	goal.esObjetivo(True)
-	nod = []
-	for fil in matNod:
-		for nodes in fil:
-			nod.append(nodes)
 	explorados = []
 	actual = buscarNodo(0,0)
 	actual.asignarPadre(None)
-	actual.cambiarCosto(actual.defHeu(pos_f))
+	explorados.append(actual)
+	actual.cambiarCosto(0)
 	costos = {actual : 0}
 	print 'entra'
 	rutax = []
 	rutay = []
-	while not len(nod) == 0 and not bandera:
-		actual = buscarMejor(nod)
-		explorados.append(actual)
-		nod.remove(actual)
-		if actual.objetivo:
-			break
-		vecinos = actual.vecinos
-		for vecino in vecinos:
-			costo = costos[actual] + 0.1
-			if vecino not in explorados or costo < costos[vecino]:
-				costos[vecino] = costo
-				vecino.cambiarCosto(costo + vecino.defHeu(pos_f))
-				vecino.asignarPadre(actual)
-	
-	x = []
-	y  = []
-	while actual.padre != None:
+	while not len(explorados) == 0 and not bandera:
+		actual = buscarMejor(explorados)
+		explorados.remove(actual)
+		actual.esActual(True)
 		coord2 = actual.coord
 		rutax.append(coord2[0])
 		rutay.append(coord2[1])
@@ -147,13 +132,32 @@ def Astar(xfin,yfin):
 		plt.plot(rutax,rutay,'p')
 		plt.draw()
 		plt.pause(0.8)
+		if actual.objetivo:
+			break
+		vecinos = actual.vecinos
+		for vecino in vecinos:
+			costo = costos[actual] + 0.1
+			if (vecino not in explorados or costo < costos[vecino]) and not vecino.actual:
+				costos[vecino] = costo
+				vecino.cambiarCosto(costo + vecino.defHeu(pos_f))
+				vecino.asignarPadre(actual)
+				explorados.append(vecino)
+	
+	x = []
+	y  = []
+	rutax = []
+	rutay = []
+	actual = goal
+	while actual.padre != None:
+		coord2 = actual.coord
+		rutax.append(coord2[0])
+		rutay.append(coord2[1])
 		actual = actual.padre
 	for vecino in explorados:
 		x.append(vecino.coord[0])
 		y.append(vecino.coord[1])
-	plt.plot(x, y,'p')
+	plt.plot(rutax, rutay,'p')
 	plt.show()
-
 
 def buscarNodo(x,y):
 	global matNod
