@@ -9,10 +9,16 @@ import time
 import sys 
 
 robot = 2
+r = 0.0925	##Radio de las ruedas del Pioneer obtenidas en el manual en m
+l = 0.1900	##Distancia entre la rueda y el punto con el que se modela el robot en m
+J1 = np.array([[1,0,l],[1,0,-l]]) 
+inv_J2 = np.array([[1.0/r,0],[0,1.0/r]])
+pub = rospy.Publisher('/motorsVel', Float32MultiArray, queue_size=10) 
 
 def arrancar():
 	rospy.init_node('punto2c', anonymous = True)
 	rospy.Subscriber('/obstacles', Float32MultiArray ,obstacles)
+	rospy.Subscriber('/pioneerPosition', Twist ,vecto)
 	tasa = rospy.Rate(10)
 	rospy.myargv(argv=sys.argv)
 	try:
@@ -24,7 +30,7 @@ def arrancar():
 		yfin = 40
 		thetafin = math.pi/2
 	crearCuadricula()
-	Astar(xfin,yfin)
+	control(xfin,yfin,thetafin)
 	try:
 		while not rospy.is_shutdown():
 			tasa.sleep()
@@ -148,9 +154,11 @@ def Astar(xfin,yfin):
 	for vecino in explorados:
 		x.append(vecino.coord[0])
 		y.append(vecino.coord[1])
-	print rutax, rutay
+	return rutax, rutay
 
-	
+def R(theta): ##funcion que retorna la matriz de rotacion
+	return np.array([[math.cos(theta),math.sin(theta),0],[-math.sin(theta),math.cos(theta),0],[0,0,1]])
+
 def buscarNodo(x,y):
 	global matNod
 	a = int(round((5 + x)/0.25))
@@ -165,7 +173,43 @@ def buscarMejor(nodos):
 			cost = nod.costo
 			best = nod
 	return best
-	
+
+def control(xfin, yfin, thethafin):
+	global posix, posiy, lastheta
+	x,y = Astar(xfin,yfin)
+	x = x.reverse()
+	y = y.reverse()
+	rho = 10
+	for i in range(len(x)):
+		while rho >= 0.1:
+			dx = x[i] - posix[-1]
+			dy = y[i] - posiy[-1]
+			if (x[i] == x[-2] and y[i] == y[-2]):
+				dtheta = lastheta - thetafin
+			else:
+				dtheta = math.atan2(y[i+1]-y[i],x[i+1]-x[i]) - thetafin
+			rho = math.sqrt((dx)**2 + (dy)**2)
+			alpha = -dtheta + math.atan2(dy,dx)	#Se calculan los errores en coordenadas esfericas y se calcula la velocidad de acuerdo con kp
+			beta = -dtheta - alpha
+			if (alpha >= math.pi):
+				alpha = alpha - 2*pi
+			elif (alpha <= -math.pi):
+				alpha = alpha + 2*pi
+			if (beta >= math.pi):
+				beta = beta - 2*pi
+			elif (beta <= -math.pi):
+				beta = beta + 2*pi
+
+
+def vecto(data): ##Funcion que manipula la informacion con la posicion del robot
+	global posix, posiy, lastheta, vec
+	xact = data.linear.x
+	yact = data.linear.y
+	posix.append(xact)
+	posiy.append(yact)  ##Se agregan dichos valores a un vector para mostrarlos en pantalla
+	lastheta = data.angular.z  ## Se guarda el ultimo theta obtenido en simulacion
+	pub.publish(data = [vec[1],vec[0]])  ##Se publican las velocidades calculadas por la ley de control 
+
 if __name__ == '__main__':
 	global obs, bandera
 	obs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
