@@ -113,6 +113,7 @@ def Astar(xfin,yfin):
 	goal = buscarNodo(xfin,yfin)
 	goal.esObjetivo(True)
 	explorados = []
+	print 'joh'
 	actual = buscarNodo(0,0)
 	actual.asignarPadre(None)
 	explorados.append(actual)
