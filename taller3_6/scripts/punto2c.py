@@ -175,7 +175,7 @@ def buscarMejor(nodos):
 	return best
 
 def control(xfin, yfin, thethafin):
-	global posix, posiy, lastheta
+	global posix, posiy, lastheta, primero, vec
 	x,y = Astar(xfin,yfin)
 	x = x.reverse()
 	y = y.reverse()
@@ -199,6 +199,21 @@ def control(xfin, yfin, thethafin):
 				beta = beta - 2*pi
 			elif (beta <= -math.pi):
 				beta = beta + 2*pi
+			if (primero and alpha != 0):
+				if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
+					kp = -0.05
+					ka = -0.1
+					kb = -0.4
+				else:
+					kp = 0.05
+					ka = 0.6
+					kb = 0.1
+				primero = False
+			v = kp * rho
+			x = v*math.cos(lastheta)
+			y = v*math.sin(lastheta)
+			w = (ka*alpha) + (kb*(beta))
+			vec = inv_J2.dot(J1.dot(R(lastheta).dot(np.array([x,y,w]))))
 
 
 def vecto(data): ##Funcion que manipula la informacion con la posicion del robot
@@ -211,9 +226,13 @@ def vecto(data): ##Funcion que manipula la informacion con la posicion del robot
 	pub.publish(data = [vec[1],vec[0]])  ##Se publican las velocidades calculadas por la ley de control 
 
 if __name__ == '__main__':
-	global obs, bandera
+	global obs, bandera, primero, posix, posiy, lastheta, primero, vec
 	obs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+	posix = [0]
+	posiy = [0]
+	vec = [0,0]
 	bandera = False
+	primero = True
 	try:
 		threading.Thread(target=ThreadInputs).start()
 		arrancar()
