@@ -3,6 +3,7 @@ import rospy
 from std_msgs.msg import Float32MultiArray, Float32
 from pylab import *
 from pynput.keyboard import Key, Listener 
+from geometry_msgs.msg import Twist
 import matplotlib.pyplot as plt
 import threading
 import time
@@ -36,6 +37,7 @@ def arrancar():
 			tasa.sleep()
 	except rospy.ServiceException as e:
 		pass
+	vecto(data)	
 		
 def obstacles(data):
 	global obs
