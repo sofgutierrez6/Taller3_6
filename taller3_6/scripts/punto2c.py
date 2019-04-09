@@ -17,6 +17,7 @@ inv_J2 = np.array([[1.0/r,0],[0,1.0/r]])
 pub = rospy.Publisher('/motorsVel', Float32MultiArray, queue_size=10) 
 
 def arrancar():
+	global xfin, yfin, thetafin
 	rospy.init_node('punto2c', anonymous = True)
 	rospy.Subscriber('/obstacles', Float32MultiArray ,obstacles)
 	rospy.Subscriber('/pioneerPosition', Twist ,vecto)
@@ -30,14 +31,14 @@ def arrancar():
 		xfin = 40
 		yfin = 40
 		thetafin = math.pi/2
+	time.sleep(1)
 	crearCuadricula()
-	control(xfin,yfin,thetafin)
+	threading.Thread(target=control).start()
 	try:
 		while not rospy.is_shutdown():
 			tasa.sleep()
 	except rospy.ServiceException as e:
 		pass
-	vecto(data)	
 		
 def obstacles(data):
 	global obs
@@ -45,8 +46,6 @@ def obstacles(data):
 	
 def crearCuadricula():
 	global obs, matriz, matNod
-	matriz = [[0  for i in range(200)]for j in range(200)]
-	matNod = [[Nodo([i , j]) for i in range(200)]for j in range(200)]
 	x = [(5 + obs[0])/0.25 , (5 + obs[1])/0.25 , (5 + obs[2])/0.25 , (5 + obs[3])/0.25 , (5 + obs[4])/0.25]
 	y = [(5 + obs[5])/0.25 , (5 + obs[6])/0.25 , (5 + obs[7])/0.25 , (5 + obs[8])/0.25 , (5 + obs[9])/0.25]
 	r = [obs[10]/0.25 , obs[11]/0.25 , obs[12]/0.25 , obs[13]/0.25 , obs[14]/0.25]
@@ -68,8 +67,6 @@ def crearCuadricula():
 						if (indice >= 0 and indice <= 199 and ja >= 0 and ja <= 199):
 							if (matriz[ja][indice] == 0 and not ((abs(indice - posN[0]) + abs(ja - posN[1])) == 0)):
 								nod2.agregarVecinos(matNod[ja][indice])
-	if (bandera):
-		return False
 				
 		
 def ThreadInputs():
@@ -115,13 +112,13 @@ class Nodo:
 		self.objetivo = objetivo
 		
 		
-def Astar(xfin,yfin):
-	global bandera
+def Astar():
+	global bandera, xfin, yfin, posix, posiy
 	pos_f = [xfin,yfin]
 	goal = buscarNodo(xfin,yfin)
 	goal.esObjetivo(True)
 	explorados = []
-	actual = buscarNodo(0,0)
+	actual = buscarNodo(posix[-1], posiy[-1])
 	actual.asignarPadre(None)
 	explorados.append(actual)
 	actual.cambiarCosto(0)
@@ -143,7 +140,6 @@ def Astar(xfin,yfin):
 				vecino.cambiarCosto(costo + vecino.defHeu(pos_f))
 				vecino.asignarPadre(actual)
 				explorados.append(vecino)
-	
 	x = []
 	y  = []
 	rutax = []
@@ -176,46 +172,57 @@ def buscarMejor(nodos):
 			best = nod
 	return best
 
-def control(xfin, yfin, thethafin):
-	global posix, posiy, lastheta, primero, vec
-	x,y = Astar(xfin,yfin)
-	x = x.reverse()
-	y = y.reverse()
-	rho = 10
-	for i in range(len(x)):
-		while rho >= 0.1:
-			dx = x[i] - posix[-1]
-			dy = y[i] - posiy[-1]
-			if (x[i] == x[-2] and y[i] == y[-2]):
-				dtheta = lastheta - thetafin
-			else:
-				dtheta = math.atan2(y[i+1]-y[i],x[i+1]-x[i]) - thetafin
-			rho = math.sqrt((dx)**2 + (dy)**2)
-			alpha = -dtheta + math.atan2(dy,dx)	#Se calculan los errores en coordenadas esfericas y se calcula la velocidad de acuerdo con kp
-			beta = -dtheta - alpha
-			if (alpha >= math.pi):
-				alpha = alpha - 2*pi
-			elif (alpha <= -math.pi):
-				alpha = alpha + 2*pi
-			if (beta >= math.pi):
-				beta = beta - 2*pi
-			elif (beta <= -math.pi):
-				beta = beta + 2*pi
-			if (primero and alpha != 0):
-				if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
-					kp = -0.05
-					ka = -0.1
-					kb = -0.4
+def control():
+	global posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin
+	kp = 0
+	ka = 0
+	kb = 0
+	while True:
+		x_vec,y_vec = Astar()
+		x_vec.reverse()
+		y_vec.reverse()
+		if x_vec == None or len(x_vec) < 2:
+			x_vec = [0,0]
+			y_vec = [0,0]
+		rho = 10
+		for i in range(len(x_vec)):
+			print 'paso'
+			while rho >= 0.1:
+				dx = x_vec[i] - posix[-1]
+				dy = y_vec[i] - posiy[-1]
+				if (x_vec[i] == x_vec[-2] and y_vec[i] == y_vec[-2]):
+					dtheta = lastheta - thetafin
 				else:
-					kp = 0.05
-					ka = 0.6
-					kb = 0.1
-				primero = False
-			v = kp * rho
-			x = v*math.cos(lastheta)
-			y = v*math.sin(lastheta)
-			w = (ka*alpha) + (kb*(beta))
-			vec = inv_J2.dot(J1.dot(R(lastheta).dot(np.array([x,y,w]))))
+					dtheta = math.atan2(y_vec[i+1]-y_vec[i],x_vec[i+1]-x_vec[i]) - thetafin
+				rho = math.sqrt((dx)**2 + (dy)**2)
+				alpha = -dtheta + math.atan2(dy,dx)	#Se calculan los errores en coordenadas esfericas y se calcula la velocidad de acuerdo con kp
+				beta = -dtheta - alpha
+				if (alpha >= math.pi):
+					alpha = alpha - 2*pi
+				elif (alpha <= -math.pi):
+					alpha = alpha + 2*pi
+				if (beta >= math.pi):
+					beta = beta - 2*pi
+				elif (beta <= -math.pi):
+					beta = beta + 2*pi
+				if (primero):
+					if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
+						kp = -2
+						ka = -0.1
+						kb = -0.4
+					else:
+						kp = 2
+						ka = 0.6
+						kb = 0.1
+					primero = False
+				v = kp * rho
+				x = v*math.cos(lastheta)
+				y = v*math.sin(lastheta)
+				w = (ka*alpha) + (kb*(beta))
+				vec = inv_J2.dot(J1.dot(R(lastheta).dot(np.array([x,y,w]))))
+				time.sleep(0.2)
+				if bandera:
+					return False
 
 
 def vecto(data): ##Funcion que manipula la informacion con la posicion del robot
@@ -227,14 +234,20 @@ def vecto(data): ##Funcion que manipula la informacion con la posicion del robot
 	lastheta = data.angular.z  ## Se guarda el ultimo theta obtenido en simulacion
 	pub.publish(data = [vec[1],vec[0]])  ##Se publican las velocidades calculadas por la ley de control 
 
-if __name__ == '__main__':
-	global obs, bandera, primero, posix, posiy, lastheta, primero, vec
+if __name__ == '__main__':	
+	global obs, bandera, primero, posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, matriz, matNod
 	obs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 	posix = [0]
 	posiy = [0]
 	vec = [0,0]
+	matriz = [[0  for i in range(200)]for j in range(200)]
+	matNod = [[Nodo([i , j]) for i in range(200)]for j in range(200)]
 	bandera = False
 	primero = True
+	xfin = 0
+	yfin = 0
+	lastheta = 0
+	thetafin = 0
 	try:
 		threading.Thread(target=ThreadInputs).start()
 		arrancar()
