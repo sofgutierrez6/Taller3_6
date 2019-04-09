@@ -140,8 +140,6 @@ def Astar():
 				vecino.cambiarCosto(costo + vecino.defHeu(pos_f))
 				vecino.asignarPadre(actual)
 				explorados.append(vecino)
-	x = []
-	y  = []
 	rutax = []
 	rutay = []
 	while actual.padre != None:
@@ -149,9 +147,6 @@ def Astar():
 		rutax.append(coord2[0])
 		rutay.append(coord2[1])
 		actual = actual.padre
-	for vecino in explorados:
-		x.append(vecino.coord[0])
-		y.append(vecino.coord[1])
 	return rutax, rutay
 
 def R(theta): ##funcion que retorna la matriz de rotacion
@@ -177,17 +172,14 @@ def control():
 	kp = 0
 	ka = 0
 	kb = 0
+	x_vec,y_vec = Astar()
+	x_vec.reverse()
+	y_vec.reverse()
 	while True:
-		x_vec,y_vec = Astar()
-		x_vec.reverse()
-		y_vec.reverse()
-		if x_vec == None or len(x_vec) < 2:
-			x_vec = [0,0]
-			y_vec = [0,0]
 		rho = 10
 		for i in range(len(x_vec)):
-			print 'paso'
-			while rho >= 0.1:
+			while rho >= 0.05:
+				print rho
 				dx = x_vec[i] - posix[-1]
 				dy = y_vec[i] - posiy[-1]
 				if (x_vec[i] == x_vec[-2] and y_vec[i] == y_vec[-2]):
@@ -211,9 +203,9 @@ def control():
 						ka = -0.1
 						kb = -0.4
 					else:
-						kp = 2
-						ka = 0.6
-						kb = 0.1
+						kp = 1
+						ka = 2
+						kb = 0.8
 					primero = False
 				v = kp * rho
 				x = v*math.cos(lastheta)
