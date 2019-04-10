@@ -50,7 +50,7 @@ def publicar():
 	pub.publish(data = [vec[1],vec[0]])
 
 def crearCuadricula():
-	global obs, matriz, matNod
+	global obs, matriz, matNod, xplot, yplot
 	x = [(5 + obs[0])/0.25 , (5 + obs[1])/0.25 , (5 + obs[2])/0.25 , (5 + obs[3])/0.25 , (5 + obs[4])/0.25]
 	y = [(5 + obs[5])/0.25 , (5 + obs[6])/0.25 , (5 + obs[7])/0.25 , (5 + obs[8])/0.25 , (5 + obs[9])/0.25]
 	r = [obs[10]/0.25 , obs[11]/0.25 , obs[12]/0.25 , obs[13]/0.25 , obs[14]/0.25]
@@ -72,18 +72,8 @@ def crearCuadricula():
 						if (indice >= 0 and indice <= 199 and ja >= 0 and ja <= 199):
 							if (matriz[ja][indice] == 0 and not ((abs(indice - posN[0]) + abs(ja - posN[1])) == 0)):
 								nod2.agregarVecinos(matNod[ja][indice])
-				
-		
-def ThreadInputs():
-	with Listener(on_press = keypress) as listener:
-		listener.join()
-		
-def keypress(key):
-	global bandera
-	while True:
-		if key == Key.esc:
-			bandera = True 	##Se usa la tecla Esc para terminar los diferentes hilos implementados
-			return False
+	xplot = list(map(lambda x: -5 + (0.25*x), x))
+	yplot = list(map(lambda x: -5 + (0.25*x), y))
 
 class Nodo:
 	def __init__(self, pos):
@@ -177,9 +167,6 @@ def buscarMejor(nodos):
 
 def control():
 	global posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, bandera
-	kp = 0
-	ka = 0
-	kb = 0
 	rho = 10
 	beta = 20
 	x_vec,y_vec = Astar()
@@ -217,8 +204,8 @@ def control():
 					ka = 1.3'''
 				primero = False
 			kb = 0.07
-			kp = 0.4
-			ka = 1.3
+			kp = 0.6
+			ka = 1.8
 			v = kp * rho
 			x = v*math.cos(lastheta)
 			y = v*math.sin(lastheta)
@@ -230,8 +217,23 @@ def control():
 		rho = 10
 		beta = 20
 		primero = True
-	if bandera:
-		return False
+	beta = 0.5
+	while abs(beta) >= 0.01:
+		kb = 0.3
+		beta = -lastheta + thetafin
+		if (beta >= 2*math.pi):
+				beta = beta - 2*pi
+		elif (beta <= -2*math.pi): 
+			beta = beta + 2*pi
+		w =(kb*(beta))
+		x = 0
+		y = 0
+		vec = inv_J2.dot(J1.dot(R(lastheta).dot(np.array([x,y,w]))))
+		time.sleep(0.2)
+		if bandera:
+			return False
+	plt.close()
+	bandera = True
 	vec = [0,0]
 	return False
 
@@ -244,11 +246,35 @@ def vecto(data): ##Funcion que manipula la informacion con la posicion del robot
 	posiy.append(yact)  ##Se agregan dichos valores a un vector para mostrarlos en pantalla
 	lastheta = data.angular.z  ## Se guarda el ultimo theta obtenido en simulacion 
 
+def plotPos():
+	global posix, posiy, xplot, yplot
+	while True:
+		plt.clf()
+		plt.plot(posix,posiy)
+		plt.plot(xplot,yplot,'p')
+		plt.draw()
+		if bandera:
+			return False
+		plt.pause(0.8)
+
+def keypress(key):
+	global bandera
+	if key == Key.esc:
+		bandera = True
+		print "fin" 	##Se usa la tecla Esc para terminar los diferentes hilos implementados
+		return False
+		
+def ThreadInputs():
+	with Listener(on_press = keypress) as listener:
+		listener.join()
+
 if __name__ == '__main__':	
-	global obs, bandera, primero, posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, matriz, matNod
+	global obs, bandera, primero, posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, matriz, matNod, xplot, yplot
 	obs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 	posix = [0]
 	posiy = [0]
+	xplot = [0]
+	yplot = [0]
 	vec = [0,0]
 	matriz = [[0  for i in range(200)]for j in range(200)]
 	matNod = [[Nodo([i , j]) for i in range(200)]for j in range(200)]
@@ -259,6 +285,7 @@ if __name__ == '__main__':
 	lastheta = 0
 	thetafin = 0
 	try:
+		threading.Thread(target=plotPos).start()
 		threading.Thread(target=ThreadInputs).start()
 		arrancar()
 	except rospy.ServiceException:
