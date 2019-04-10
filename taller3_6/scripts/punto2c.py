@@ -120,7 +120,7 @@ class Nodo:
 def Astar():
 	global bandera, xfin, yfin, posix, posiy, matNod
 	for fil in matNod:
-		for nod in fila:
+		for nod in fil:
 			nod.esActual(False)
 	pos_f = [xfin,yfin]
 	goal = buscarNodo(xfin,yfin)
@@ -185,11 +185,7 @@ def control():
 	x_vec,y_vec = Astar()
 	x_vec.reverse()
 	y_vec.reverse()
-	print x_vec, y_vec
 	for i in range(len(x_vec)):
-		x_vec,y_vec = Astar()
-		x_vec.reverse()
-		y_vec.reverse()
 		while rho >= 0.08:
 			dx = x_vec[i] - posix[-1]
 			dy = y_vec[i] - posiy[-1]
@@ -211,15 +207,18 @@ def control():
 			elif (beta <= -2*math.pi):
 				beta = beta + 2*pi
 			if (primero):
-				if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
-					kb = -0.1
-					kp = -0.4
-					ka = -1.3
+				'''if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
+					kb = -0.06
+					kp = -0.3
+					ka = -0.2
 				else:
-					kb = 0.4
-					kp = 0.5
-					ka = 1.3
+					kb = 0.1
+					kp = 0.4
+					ka = 1.3'''
 				primero = False
+			kb = 0.07
+			kp = 0.4
+			ka = 1.3
 			v = kp * rho
 			x = v*math.cos(lastheta)
 			y = v*math.sin(lastheta)
