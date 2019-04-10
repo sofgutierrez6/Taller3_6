@@ -151,8 +151,6 @@ def control():  ## Metodo que realiza los calculos de la ley de control
 				ka = 0.6
 				kb = 0.1
 			primero = False
-		elif(alpha == 0):
-			kp = 0
 		v = kp * rho
 		if(rho < 0.2):
 		###Si el robot esta muy cerca del objeivo se detiene y se alinea
