@@ -66,8 +66,7 @@ def grafo():
 				for m in range(j-5,j+10,5):
 					if (matriz[i][j] == 0 and matriz[k][m] == 0 and k >= 50 and k <= 100 and m >= 50 and m <= 100 and not ((abs(k-i) + abs(m-j))==0)):
 						dot.edge(str(i)+","+str(j) , str(k)+","+str(m))
-	dot.render('prueba.gv', view=True) 
-	print(dot.source)
+	dot.render('src/Taller3_6/taller3_6/results/grafoPunto2.gv', view=True) 
 				
 
 def plotMap():

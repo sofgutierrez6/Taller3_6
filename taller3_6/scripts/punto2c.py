@@ -37,15 +37,20 @@ def arrancar():
 	try:
 		while not rospy.is_shutdown():
 			tasa.sleep()
+			publicar()
 	except rospy.ServiceException as e:
 		pass
 		
-def obstacles(data):
+def obstacles(data):	
 	global obs
 	obs = data.data
 	
+def publicar():
+	global vec
+	pub.publish(data = [vec[1],vec[0]])
+
 def crearCuadricula():
-	global obs, matriz, matNod
+	global obs, matriz, matNod, xplot, yplot
 	x = [(5 + obs[0])/0.25 , (5 + obs[1])/0.25 , (5 + obs[2])/0.25 , (5 + obs[3])/0.25 , (5 + obs[4])/0.25]
 	y = [(5 + obs[5])/0.25 , (5 + obs[6])/0.25 , (5 + obs[7])/0.25 , (5 + obs[8])/0.25 , (5 + obs[9])/0.25]
 	r = [obs[10]/0.25 , obs[11]/0.25 , obs[12]/0.25 , obs[13]/0.25 , obs[14]/0.25]
@@ -67,18 +72,8 @@ def crearCuadricula():
 						if (indice >= 0 and indice <= 199 and ja >= 0 and ja <= 199):
 							if (matriz[ja][indice] == 0 and not ((abs(indice - posN[0]) + abs(ja - posN[1])) == 0)):
 								nod2.agregarVecinos(matNod[ja][indice])
-				
-		
-def ThreadInputs():
-	with Listener(on_press = keypress) as listener:
-		listener.join()
-		
-def keypress(key):
-	global bandera
-	while True:
-		if key == Key.esc:
-			bandera = True 	##Se usa la tecla Esc para terminar los diferentes hilos implementados
-			return False
+	xplot = list(map(lambda x: -5 + (0.25*x), x))
+	yplot = list(map(lambda x: -5 + (0.25*x), y))
 
 class Nodo:
 	def __init__(self, pos):
@@ -113,7 +108,10 @@ class Nodo:
 		
 		
 def Astar():
-	global bandera, xfin, yfin, posix, posiy
+	global bandera, xfin, yfin, posix, posiy, matNod
+	for fil in matNod:
+		for nod in fil:
+			nod.esActual(False)
 	pos_f = [xfin,yfin]
 	goal = buscarNodo(xfin,yfin)
 	goal.esObjetivo(True)
@@ -168,53 +166,75 @@ def buscarMejor(nodos):
 	return best
 
 def control():
-	global posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin
-	kp = 0
-	ka = 0
-	kb = 0
+	global posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, bandera
+	rho = 10
+	beta = 20
 	x_vec,y_vec = Astar()
 	x_vec.reverse()
 	y_vec.reverse()
-	while True:
-		rho = 10
-		for i in range(len(x_vec)):
-			while rho >= 0.05:
-				print rho
-				dx = x_vec[i] - posix[-1]
-				dy = y_vec[i] - posiy[-1]
-				if (x_vec[i] == x_vec[-2] and y_vec[i] == y_vec[-2]):
-					dtheta = lastheta - thetafin
+	for i in range(len(x_vec)):
+		while rho >= 0.08:
+			dx = x_vec[i] - posix[-1]
+			dy = y_vec[i] - posiy[-1]
+			if (x_vec[i] == x_vec[-2] and y_vec[i] == y_vec[-2]):
+				dtheta = lastheta - thetafin
+			elif (i != len(x_vec)-1):
+				dtheta = lastheta - math.atan2(y_vec[i+1]-y_vec[i],x_vec[i+1]-x_vec[i])
+			else:
+				dtheta = lastheta - thetafin
+			rho = math.sqrt((dx)**2 + (dy)**2)
+			alpha = -lastheta + math.atan2(dy,dx)	#Se calculan los errores en coordenadas esfericas y se calcula la velocidad de acuerdo con kp
+			beta = -math.atan2(dy,dx) - dtheta
+			if (alpha >= 2*math.pi):
+				alpha = alpha - 2*pi
+			elif (alpha <= -2*math.pi):
+				alpha = alpha + 2*pi
+			if (beta >= 2*math.pi):
+				beta = beta - 2*pi
+			elif (beta <= -2*math.pi):
+				beta = beta + 2*pi
+			if (primero):
+				'''if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
+					kb = -0.06
+					kp = -0.3
+					ka = -0.2
 				else:
-					dtheta = math.atan2(y_vec[i+1]-y_vec[i],x_vec[i+1]-x_vec[i]) - thetafin
-				rho = math.sqrt((dx)**2 + (dy)**2)
-				alpha = -dtheta + math.atan2(dy,dx)	#Se calculan los errores en coordenadas esfericas y se calcula la velocidad de acuerdo con kp
-				beta = -dtheta - alpha
-				if (alpha >= math.pi):
-					alpha = alpha - 2*pi
-				elif (alpha <= -math.pi):
-					alpha = alpha + 2*pi
-				if (beta >= math.pi):
-					beta = beta - 2*pi
-				elif (beta <= -math.pi):
-					beta = beta + 2*pi
-				if (primero):
-					if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
-						kp = -2
-						ka = -0.1
-						kb = -0.4
-					else:
-						kp = 1
-						ka = 2
-						kb = 0.8
-					primero = False
-				v = kp * rho
-				x = v*math.cos(lastheta)
-				y = v*math.sin(lastheta)
-				w = (ka*alpha) + (kb*(beta))
-				vec = inv_J2.dot(J1.dot(R(lastheta).dot(np.array([x,y,w]))))
-				time.sleep(0.2)
-				if bandera:
-					return False
+					kb = 0.1
+					kp = 0.4
+					ka = 1.3'''
+				primero = False
+			kb = 0.07
+			kp = 0.6
+			ka = 1.8
+			v = kp * rho
+			x = v*math.cos(lastheta)
+			y = v*math.sin(lastheta)
+			w = (ka*alpha) + (kb*(beta))
+			vec = inv_J2.dot(J1.dot(R(lastheta).dot(np.array([x,y,w]))))
+			time.sleep(0.2)
+			if bandera:
+				return False
+		rho = 10
+		beta = 20
+		primero = True
+	beta = 0.5
+	while abs(beta) >= 0.01:
+		kb = 0.3
+		beta = -lastheta + thetafin
+		if (beta >= 2*math.pi):
+				beta = beta - 2*pi
+		elif (beta <= -2*math.pi): 
+			beta = beta + 2*pi
+		w =(kb*(beta))
+		x = 0
+		y = 0
+		vec = inv_J2.dot(J1.dot(R(lastheta).dot(np.array([x,y,w]))))
+		time.sleep(0.2)
+		if bandera:
+			return False
+	bandera = True
+	vec = [0,0]
+	return False
 
 
 def vecto(data): ##Funcion que manipula la informacion con la posicion del robot
@@ -223,14 +243,37 @@ def vecto(data): ##Funcion que manipula la informacion con la posicion del robot
 	yact = data.linear.y
 	posix.append(xact)
 	posiy.append(yact)  ##Se agregan dichos valores a un vector para mostrarlos en pantalla
-	lastheta = data.angular.z  ## Se guarda el ultimo theta obtenido en simulacion
-	pub.publish(data = [vec[1],vec[0]])  ##Se publican las velocidades calculadas por la ley de control 
+	lastheta = data.angular.z  ## Se guarda el ultimo theta obtenido en simulacion 
+
+def plotPos():
+	global posix, posiy, xplot, yplot
+	while True:
+		plt.clf()
+		plt.plot(posix,posiy)
+		plt.plot(xplot,yplot,'p')
+		plt.draw()
+		if bandera:
+			return False
+		plt.pause(0.8)
+
+def keypress(key):
+	global bandera
+	if key == Key.esc:
+		bandera = True
+		print "fin" 	##Se usa la tecla Esc para terminar los diferentes hilos implementados
+		return False
+		
+def ThreadInputs():
+	with Listener(on_press = keypress) as listener:
+		listener.join()
 
 if __name__ == '__main__':	
-	global obs, bandera, primero, posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, matriz, matNod
+	global obs, bandera, primero, posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, matriz, matNod, xplot, yplot
 	obs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 	posix = [0]
 	posiy = [0]
+	xplot = [0]
+	yplot = [0]
 	vec = [0,0]
 	matriz = [[0  for i in range(200)]for j in range(200)]
 	matNod = [[Nodo([i , j]) for i in range(200)]for j in range(200)]
@@ -241,6 +284,7 @@ if __name__ == '__main__':
 	lastheta = 0
 	thetafin = 0
 	try:
+		threading.Thread(target=plotPos).start()
 		threading.Thread(target=ThreadInputs).start()
 		arrancar()
 	except rospy.ServiceException:
