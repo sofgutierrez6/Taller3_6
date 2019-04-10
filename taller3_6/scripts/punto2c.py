@@ -232,7 +232,6 @@ def control():
 		time.sleep(0.2)
 		if bandera:
 			return False
-	plt.close()
 	bandera = True
 	vec = [0,0]
 	return False
