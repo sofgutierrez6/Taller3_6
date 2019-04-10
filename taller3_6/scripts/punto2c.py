@@ -37,13 +37,18 @@ def arrancar():
 	try:
 		while not rospy.is_shutdown():
 			tasa.sleep()
+			publicar()
 	except rospy.ServiceException as e:
 		pass
 		
-def obstacles(data):
+def obstacles(data):	
 	global obs
 	obs = data.data
 	
+def publicar():
+	global vec
+	pub.publish(data = [vec[1],vec[0]])
+
 def crearCuadricula():
 	global obs, matriz, matNod
 	x = [(5 + obs[0])/0.25 , (5 + obs[1])/0.25 , (5 + obs[2])/0.25 , (5 + obs[3])/0.25 , (5 + obs[4])/0.25]
@@ -113,7 +118,10 @@ class Nodo:
 		
 		
 def Astar():
-	global bandera, xfin, yfin, posix, posiy
+	global bandera, xfin, yfin, posix, posiy, matNod
+	for fil in matNod:
+		for nod in fila:
+			nod.esActual(False)
 	pos_f = [xfin,yfin]
 	goal = buscarNodo(xfin,yfin)
 	goal.esObjetivo(True)
@@ -168,53 +176,65 @@ def buscarMejor(nodos):
 	return best
 
 def control():
-	global posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin
+	global posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, bandera
 	kp = 0
 	ka = 0
 	kb = 0
+	rho = 10
+	beta = 20
 	x_vec,y_vec = Astar()
 	x_vec.reverse()
 	y_vec.reverse()
-	while True:
-		rho = 10
-		for i in range(len(x_vec)):
-			while rho >= 0.05:
-				print rho
-				dx = x_vec[i] - posix[-1]
-				dy = y_vec[i] - posiy[-1]
-				if (x_vec[i] == x_vec[-2] and y_vec[i] == y_vec[-2]):
-					dtheta = lastheta - thetafin
+	print x_vec, y_vec
+	for i in range(len(x_vec)):
+		x_vec,y_vec = Astar()
+		x_vec.reverse()
+		y_vec.reverse()
+		while rho >= 0.08:
+			dx = x_vec[i] - posix[-1]
+			dy = y_vec[i] - posiy[-1]
+			if (x_vec[i] == x_vec[-2] and y_vec[i] == y_vec[-2]):
+				dtheta = lastheta - thetafin
+			elif (i != len(x_vec)-1):
+				dtheta = lastheta - math.atan2(y_vec[i+1]-y_vec[i],x_vec[i+1]-x_vec[i])
+			else:
+				dtheta = lastheta - thetafin
+			rho = math.sqrt((dx)**2 + (dy)**2)
+			alpha = -lastheta + math.atan2(dy,dx)	#Se calculan los errores en coordenadas esfericas y se calcula la velocidad de acuerdo con kp
+			beta = -math.atan2(dy,dx) - dtheta
+			if (alpha >= 2*math.pi):
+				alpha = alpha - 2*pi
+			elif (alpha <= -2*math.pi):
+				alpha = alpha + 2*pi
+			if (beta >= 2*math.pi):
+				beta = beta - 2*pi
+			elif (beta <= -2*math.pi):
+				beta = beta + 2*pi
+			if (primero):
+				if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
+					kb = -0.1
+					kp = -0.4
+					ka = -1.3
 				else:
-					dtheta = math.atan2(y_vec[i+1]-y_vec[i],x_vec[i+1]-x_vec[i]) - thetafin
-				rho = math.sqrt((dx)**2 + (dy)**2)
-				alpha = -dtheta + math.atan2(dy,dx)	#Se calculan los errores en coordenadas esfericas y se calcula la velocidad de acuerdo con kp
-				beta = -dtheta - alpha
-				if (alpha >= math.pi):
-					alpha = alpha - 2*pi
-				elif (alpha <= -math.pi):
-					alpha = alpha + 2*pi
-				if (beta >= math.pi):
-					beta = beta - 2*pi
-				elif (beta <= -math.pi):
-					beta = beta + 2*pi
-				if (primero):
-					if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
-						kp = -2
-						ka = -0.1
-						kb = -0.4
-					else:
-						kp = 1
-						ka = 2
-						kb = 0.8
-					primero = False
-				v = kp * rho
-				x = v*math.cos(lastheta)
-				y = v*math.sin(lastheta)
-				w = (ka*alpha) + (kb*(beta))
-				vec = inv_J2.dot(J1.dot(R(lastheta).dot(np.array([x,y,w]))))
-				time.sleep(0.2)
-				if bandera:
-					return False
+					kb = 0.4
+					kp = 0.5
+					ka = 1.3
+				primero = False
+			v = kp * rho
+			x = v*math.cos(lastheta)
+			y = v*math.sin(lastheta)
+			w = (ka*alpha) + (kb*(beta))
+			vec = inv_J2.dot(J1.dot(R(lastheta).dot(np.array([x,y,w]))))
+			time.sleep(0.2)
+			if bandera:
+				return False
+		rho = 10
+		beta = 20
+		primero = True
+	if bandera:
+		return False
+	vec = [0,0]
+	return False
 
 
 def vecto(data): ##Funcion que manipula la informacion con la posicion del robot
@@ -223,8 +243,7 @@ def vecto(data): ##Funcion que manipula la informacion con la posicion del robot
 	yact = data.linear.y
 	posix.append(xact)
 	posiy.append(yact)  ##Se agregan dichos valores a un vector para mostrarlos en pantalla
-	lastheta = data.angular.z  ## Se guarda el ultimo theta obtenido en simulacion
-	pub.publish(data = [vec[1],vec[0]])  ##Se publican las velocidades calculadas por la ley de control 
+	lastheta = data.angular.z  ## Se guarda el ultimo theta obtenido en simulacion 
 
 if __name__ == '__main__':	
 	global obs, bandera, primero, posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, matriz, matNod
