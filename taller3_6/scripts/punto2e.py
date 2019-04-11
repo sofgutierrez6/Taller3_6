@@ -1,36 +1,37 @@
-"""
-Path Planning Sample Code with Randamized Rapidly-Exploring Random Trees (RRT)
-@author: AtsushiSakai(@Atsushi_twi)
-"""
+#!/usr/bin/python
 
-""" librerias algoritmo"""
-import matplotlib.pyplot as plt
-import random
-import math
-import copy
-import numpy as np
+
 
 """ librerias usadas"""
 
 import rospy
 from std_msgs.msg import Float32MultiArray, Float32
+from geometry_msgs.msg import Twist
 from pylab import *
 from pynput.keyboard import Key, Listener 
 import matplotlib.pyplot as plt
 import threading
 import time
 import sys 
-
-
-show_animation = True
-
+import random
+import math
+import copy
 
 robot = 2
+show_animation = True
+
+r = 0.0925	##Radio de las ruedas del Pioneer obtenidas en el manual en m
+l = 0.1900	##Distancia entre la rueda y el punto con el que se modela el robot en m
+J1 = np.array([[1,0,l],[1,0,-l]]) 
+inv_J2 = np.array([[1.0/r,0],[0,1.0/r]])
+pub = rospy.Publisher('/motorsVel', Float32MultiArray, queue_size=10) 
+
 
 def arrancar():
-	rospy.init_node('punto2c', anonymous = True)
-	rospy.Subscriber('/obstacles', Float32MultiArray ,obstacles)
-
+	global xfin, yfin, thetafin, obstacleList, path, obs
+	rospy.init_node('punto2e', anonymous = True)
+	rospy.Subscriber('/obstacles', Float32MultiArray , obstacles)
+	rospy.Subscriber('/pioneerPosition', Twist ,vecto)
 	tasa = rospy.Rate(10)
 	rospy.myargv(argv=sys.argv)
 	try:
@@ -38,121 +39,66 @@ def arrancar():
 		yfin = float(sys.argv[2])
 		thetafin = float(sys.argv[3])
 	except:    								##Tratamiento de los argumentos ingresador por el usuario
-		xfin = 40
-		yfin = 40
+		xfin = 2.5
+		yfin = 2.5
 		thetafin = math.pi/2
+	time.sleep(1)
+	obstacleList = [
+	(obs[0],obs[5],(2*obs[10])+0.4), 
+	(obs[1],obs[6],(2*obs[11])+0.4),
+	(obs[2],obs[7],(2*obs[12])+0.4), 
+	(obs[3],obs[8],(2*obs[13])+0.4),
+	(obs[4],obs[9],(2*obs[14])+0.4)
+	]  # [x,y,size]
+	rrt = RRT(start=[0, 0], goal=[xfin, yfin],randArea=[-5, 45], obstacleList=obstacleList)
+	path = rrt.Planning()
 	crearCuadricula()
-	Astar(xfin,yfin)
+	threading.Thread(target=plotPos).start()
+	threading.Thread(target=control).start()
+    # Draw final path
+	'''if show_animation:  # pragma: no cover
+		plt.plot([x for (x, y) in path], [y for (x, y) in path], '-r')
+		plt.grid(True)
+		plt.show()'''
+	
 	try:
 		while not rospy.is_shutdown():
 			tasa.sleep()
+			publicar()
 	except rospy.ServiceException as e:
 		pass
+    
 
-
-		
-def obstacles(data):
+def obstacles(data):	
 	global obs
 	obs = data.data
-
-
-
-
+	
+def publicar():
+	global vec
+	pub.publish(data = [vec[1],vec[0]])
 
 def crearCuadricula():
-	global obs, matriz, matNod
-	matriz = [[0  for i in range(200)]for j in range(200)]
-	matNod = [[Nodo([i , j]) for i in range(200)]for j in range(200)]
+	global obs, xplot, yplot
 	x = [(5 + obs[0])/0.25 , (5 + obs[1])/0.25 , (5 + obs[2])/0.25 , (5 + obs[3])/0.25 , (5 + obs[4])/0.25]
 	y = [(5 + obs[5])/0.25 , (5 + obs[6])/0.25 , (5 + obs[7])/0.25 , (5 + obs[8])/0.25 , (5 + obs[9])/0.25]
 	r = [obs[10]/0.25 , obs[11]/0.25 , obs[12]/0.25 , obs[13]/0.25 , obs[14]/0.25]
 	for i in range(len(x)):
-		matriz[int(x[i])][int(y[i])] = 1
 		for j in range(int(x[i]-r[i]-robot)-1, int(x[i]+r[i]+robot+1)):
 			for k in range(int(y[i]-r[i]-robot)-1, int(y[i]+r[i]+robot+1)):
 				dist = np.linalg.norm(np.array([x[i],y[i]]) - np.array([j+0.5,k+0.5]))
 				if dist <= r[i]+robot:
-					matriz[j][k] = 1
 					x.append(j)
 					y.append(k)
-	for nod in matNod:
-		for nod2 in nod:
-			posN = nod2.pos
-			if (matriz[posN[0]][posN[1]] == 0):
-				for indice in range(posN[0] - 1, posN[0] + 2 ,1):
-					for ja in range(posN[1] - 1, posN[1] + 2 ,1):
-						if (indice >= 0 and indice <= 199 and ja >= 0 and ja <= 199):
-							if (matriz[ja][indice] == 0 and not ((abs(indice - posN[0]) + abs(ja - posN[1])) == 0)):
-								nod2.agregarVecinos(matNod[ja][indice])
-	if (bandera):
-		return False
-				
-
-
-
-		
-def ThreadInputs():
-	with Listener(on_press = keypress) as listener:
-		listener.join()
-		
-def keypress(key):
-	global bandera
-	while True:
-		if key == Key.esc:
-			bandera = True 	##Se usa la tecla Esc para terminar los diferentes hilos implementados
-			return False
-
-
-
-
-
-
-
-"""class Node():
-    
-    RRT Node
-    
-
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.parent = None
-"""
-
-
-class Nodo:
-	def __init__(self, pos):
-		self.pos = pos
-		self.coord = [-5 + (0.25*pos[0]) , -5 + (0.25*pos[1])]
-		self.padre = None
-		
-	
-	def agregarVecinos(self, vecino):
-		self.vecinos.append(vecino)
-		
-	
-		
-	
-
-
-
-
-
-
-
-
-
-
-
-""" Algoritmo"""
-
+	xplot = list(map(lambda x: -5 + (0.25*x), x))
+	yplot = list(map(lambda x: -5 + (0.25*x), y))
 
 class RRT():
     """
     Class for RRT Planning
     """
 
-    def __init__(self, start, goal, obstacleList, randArea, expandDis=1.0, goalSampleRate=5, maxIter=500):
+    def __init__(self, start, goal, obstacleList,
+                 randArea, expandDis=0.25, goalSampleRate=5, maxIter=500):
         """
         Setting Parameter
         start:Start Position [x,y]
@@ -169,7 +115,7 @@ class RRT():
         self.maxIter = maxIter
         self.obstacleList = obstacleList
 
-    def Planning(self, animation=True):
+    def Planning(self, animation=False):
         """
         Pathplanning
         animation: flag for animation on or off
@@ -201,6 +147,7 @@ class RRT():
                 continue
 
             self.nodeList.append(newNode)
+            print("nNodelist:", len(self.nodeList))
 
             # check goal
             dx = newNode.x - self.end.x
@@ -223,12 +170,10 @@ class RRT():
 
         return path
 
-
-
-
-
-
-    def DrawGraph(self, rnd=None):
+    def DrawGraph(self, rnd=None):  # pragma: no cover
+        """
+        Draw Graph
+        """
         plt.clf()
         if rnd is not None:
             plt.plot(rnd[0], rnd[1], "^k")
@@ -236,26 +181,15 @@ class RRT():
             if node.parent is not None:
                 plt.plot([node.x, self.nodeList[node.parent].x], [
                          node.y, self.nodeList[node.parent].y], "-g")
-        for (x, y, size) in self.obstacleList:
-            self.PlotCircle(x, y, size)
+
+        for (ox, oy, size) in self.obstacleList:
+            plt.plot(ox, oy, "ok", ms=30 * size)
 
         plt.plot(self.start.x, self.start.y, "xr")
         plt.plot(self.end.x, self.end.y, "xr")
         plt.axis([-2, 15, -2, 15])
         plt.grid(True)
         plt.pause(0.01)
-
-
-
-
-    def PlotCircle(self, x, y, size):
-        deg = list(range(0, 360, 5))
-        deg.append(0)
-        xl = [x + size * math.cos(np.deg2rad(d)) for d in deg]
-        yl = [y + size * math.sin(np.deg2rad(d)) for d in deg]
-        plt.plot(xl, yl, "-k")
-
-
 
     def GetNearestListIndex(self, nodeList, rnd):
         dlist = [(node.x - rnd[0]) ** 2 + (node.y - rnd[1])
@@ -275,173 +209,162 @@ class RRT():
         return True  # safe
 
 
+class Node():
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.parent = None
 
 
 
-def GetPathLength(path):
-    le = 0
-    for i in range(len(path) - 1):
-        dx = path[i + 1][0] - path[i][0]
-        dy = path[i + 1][1] - path[i][1]
-        d = math.sqrt(dx * dx + dy * dy)
-        le += d
-
-    return le
+def R(theta): ##funcion que retorna la matriz de rotacion
+	return np.array([[math.cos(theta),math.sin(theta),0],[-math.sin(theta),math.cos(theta),0],[0,0,1]])
 
 
-
-
-def GetTargetPoint(path, targetL):
-    le = 0
-    ti = 0
-    lastPairLen = 0
-    for i in range(len(path) - 1):
-        dx = path[i + 1][0] - path[i][0]
-        dy = path[i + 1][1] - path[i][1]
-        d = math.sqrt(dx * dx + dy * dy)
-        le += d
-        if le >= targetL:
-            ti = i - 1
-            lastPairLen = d
-            break
-
-    partRatio = (le - targetL) / lastPairLen
-    #  print(partRatio)
-    #  print((ti,len(path),path[ti],path[ti+1]))
-
-    x = path[ti][0] + (path[ti + 1][0] - path[ti][0]) * partRatio
-    y = path[ti][1] + (path[ti + 1][1] - path[ti][1]) * partRatio
-    #  print((x,y))
-
-    return [x, y, ti]
-
-
-
-
-
-def LineCollisionCheck(first, second, obstacleList):
-    # Line Equation
-
-    x1 = first[0]
-    y1 = first[1]
-    x2 = second[0]
-    y2 = second[1]
-
-    try:
-        a = y2 - y1
-        b = -(x2 - x1)
-        c = y2 * (x2 - x1) - x2 * (y2 - y1)
-    except ZeroDivisionError:
-        return False
-
-    for (ox, oy, size) in obstacleList:
-        d = abs(a * ox + b * oy + c) / (math.sqrt(a * a + b * b))
-        if d <= (size):
-            return False
-
-    #  print("OK")
-
-    return True  # OK
-
-
-
-
-def PathSmoothing(path, maxIter, obstacleList):
-    #  print("PathSmoothing")
-
-    le = GetPathLength(path)
-
-    for i in range(maxIter):
-        # Sample two points
-        pickPoints = [random.uniform(0, le), random.uniform(0, le)]
-        pickPoints.sort()
-        #  print(pickPoints)
-        first = GetTargetPoint(path, pickPoints[0])
-        #  print(first)
-        second = GetTargetPoint(path, pickPoints[1])
-        #  print(second)
-
-        if first[2] <= 0 or second[2] <= 0:
-            continue
-
-        if (second[2] + 1) > len(path):
-            continue
-
-        if second[2] == first[2]:
-            continue
-
-        # collision check
-        if not LineCollisionCheck(first, second, obstacleList):
-            continue
-
-        # Create New path
-        newPath = []
-        newPath.extend(path[:first[2] + 1])
-        newPath.append([first[0], first[1]])
-        newPath.append([second[0], second[1]])
-        newPath.extend(path[second[2] + 1:])
-        path = newPath
-        le = GetPathLength(path)
-
-    return path
+def control():
+	global posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, bandera, path
+	rho = 10
+	beta = 20
+	x_vec = []
+	y_vec = []
+	for vec in path:
+		x_vec.append(vec[0])
+		y_vec.append(vec[1])
+	x_vec.reverse()
+	y_vec.reverse()
+	for i in range(len(x_vec)):
+		while rho >= 0.08:
+			dx = x_vec[i] - posix[-1]
+			dy = y_vec[i] - posiy[-1]
+			if (x_vec[i] == x_vec[-2] and y_vec[i] == y_vec[-2]):
+				dtheta = lastheta - thetafin
+			elif (i != len(x_vec)-1):
+				dtheta = lastheta - math.atan2(y_vec[i+1]-y_vec[i],x_vec[i+1]-x_vec[i])
+			else:
+				dtheta = lastheta - thetafin
+			rho = math.sqrt((dx)**2 + (dy)**2)
+			alpha = -lastheta + math.atan2(dy,dx)	#Se calculan los errores en coordenadas esfericas y se calcula la velocidad de acuerdo con kp
+			beta = -math.atan2(dy,dx) - dtheta
+			if (alpha >= 2*math.pi):
+				alpha = alpha - 2*pi
+			elif (alpha <= -2*math.pi):
+				alpha = alpha + 2*pi
+			if (beta >= 2*math.pi):
+				beta = beta - 2*pi
+			elif (beta <= -2*math.pi):
+				beta = beta + 2*pi
+			if (primero):
+				'''if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
+					kb = -0.06
+					kp = -0.3
+					ka = -0.2
+				else:
+					kb = 0.1
+					kp = 0.4
+					ka = 1.3'''
+				primero = False
+			kb = 0.07
+			kp = 0.6
+			ka = 1.8
+			v = kp * rho
+			x = v*math.cos(lastheta)
+			y = v*math.sin(lastheta)
+			w = (ka*alpha) + (kb*(beta))
+			vec = inv_J2.dot(J1.dot(R(lastheta).dot(np.array([x,y,w]))))
+			time.sleep(0.2)
+			if bandera:
+				return False
+		rho = 10
+		beta = 20
+		primero = True
+	beta = 0.5
+	while abs(beta) >= 0.01:
+		kb = 0.3
+		beta = -lastheta + thetafin
+		if (beta >= 2*math.pi):
+				beta = beta - 2*pi
+		elif (beta <= -2*math.pi): 
+			beta = beta + 2*pi
+		w =(kb*(beta))
+		x = 0
+		y = 0
+		vec = inv_J2.dot(J1.dot(R(lastheta).dot(np.array([x,y,w]))))
+		time.sleep(0.2)
+		if bandera:
+			return False
+	bandera = True
+	vec = [0,0]
+	return False
 
 
 
+def vecto(data): ##Funcion que manipula la informacion con la posicion del robot
+	global posix, posiy, lastheta, vec
+	xact = data.linear.x
+	yact = data.linear.y
+	posix.append(xact)
+	posiy.append(yact)  ##Se agregan dichos valores a un vector para mostrarlos en pantalla
+	lastheta = data.angular.z  ## Se guarda el ultimo theta obtenido en simulacion 
+
+
+def plotPos():
+	global posix, posiy, xplot, yplot
+	while True:
+		plt.clf()
+		plt.plot(posix,posiy)
+		plt.plot(xplot,yplot,'p')
+		plt.ylabel('Posicion en y')
+		plt.xlabel('Posicion en x')	###Mientras el robot se mueve se muestran en una grafica la posicion simulada
+		plt.title('Posicion del robot')
+		plt.draw()
+		if bandera:
+			plt.savefig('src/Taller3_6/taller3_6/results/graficaPunto2e.png')
+			plt.close()
+			return False
+		plt.pause(0.5)
 
 
 
-
-
-
-"""def main():
-    # ====Search Path with RRT====
-    # Parameter
-    obstacleList = [
-        (5, 5, 1),
-        (3, 6, 2),
-        (3, 8, 2),
-        (3, 10, 2),
-        (7, 5, 2),
-        (9, 5, 2)
-    ]  # [x,y,size]
-    rrt = RRT(start=[0, 0], goal=[5, 10],
-              randArea=[-2, 15], obstacleList=obstacleList)
-    path = rrt.Planning(animation=show_animation)
-
-    # Path smoothing
-    maxIter = 1000
-    smoothedPath = PathSmoothing(path, maxIter, obstacleList)
-
-    # Draw final path
-    if show_animation:
-        rrt.DrawGraph()
-        plt.plot([x for (x, y) in path], [y for (x, y) in path], '-r')
-
-        plt.plot([x for (x, y) in smoothedPath], [
-            y for (x, y) in smoothedPath], '-b')
-
-        plt.grid(True)
-        plt.pause(0.01)  # Need for Mac
-        plt.show()
-"""
-
-
-
-
-
-
-
-
+def keypress(key):
+	global bandera
+	if key == Key.esc:
+		bandera = True
+		print "fin" 	##Se usa la tecla Esc para terminar los diferentes hilos implementados
+		return False
+		
+def ThreadInputs():
+	with Listener(on_press = keypress) as listener:
+		listener.join()
 
 
 
 
 if __name__ == '__main__':
-	global obs, bandera
+	global obs, bandera, primero, posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, matriz, matNod, xplot, yplot
 	obs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+	posix = [0]
+	posiy = [0]
+	xplot = [0]
+	yplot = [0]
+	vec = [0,0]
+	matriz = [[0  for i in range(200)]for j in range(200)]
+	#matNod = [[Nodo([i , j]) for i in range(200)]for j in range(200)]
 	bandera = False
+	primero = True
+	xfin = 0
+	yfin = 0
+	lastheta = 0
+	thetafin = 0
 	try:
 		threading.Thread(target=ThreadInputs).start()
 		arrancar()
 	except rospy.ServiceException:
-pass
+		pass
+
+
+
+
+
+
+
+
