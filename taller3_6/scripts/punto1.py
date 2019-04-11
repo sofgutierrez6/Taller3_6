@@ -10,6 +10,12 @@ from pacman.msg import actions
 from pacman.srv import mapService
 from pacman.msg import pacmanPos
 
+#Importar colas, pilas y de prioridad
+try:
+		import Queue as queue
+	except ImportError:
+		import queue
+
 pub = rospy.Publisher('pacmanActions0', actions, queue_size=10)	## Publicador que controla al  pacman con el algoritmo d
 def iniciar():
 	##Variables globales que permiten el manejo del mapa (matriz), actual * almacenamiento del mapa. Itera es la variable que verifica cuantas veces se ha verificado la direccion de la derecha del pacman
@@ -41,10 +47,11 @@ def iniciar():
 
 ##Metodo convertir matriz en grafo
 def grafo():
-	global matriz, nodeList, costos
+	global matriz, nodeList, costos, galletas
 	##En primer lugar, se crea una lista con los nodos, los cuales corresponden a las esquinas
 	#lista de nodos
 	nodeList=[]
+	galletas=queue.Queue(data.nCookies)
 	for i in range(dimX):
 		for j in range(dimY):
 			numLibres=0
@@ -58,13 +65,16 @@ def grafo():
 				numLibres=numLibres+1
 		#Falta mirar esquinas**
 		if(numLibres>=2):
-			nodeList.append(Nodo([i, j]),False)
+			nodeList.append(Nodo([i, j],False))
+			#Si es galleta
 		elif (matriz[i][j]== "."):
-			nodeList.append(Nodo([i, j]),True)
+			nodeList.append(Nodo([i, j],True))
+			galletas.append(Nodo([i, j],True))
 	#Teniendo los vertices o nodos, se procede a construir los arcos
 	
 	for i in range(len(nodeList)):
 		for j in range(i+1,len(nodeList)):
+			#notSure
 			costos = {[nodeList[i],nodeList[j]] : 0}
 			if(nodeList[i].darX == nodeList[j].darX):
 				#Revisar
@@ -86,8 +96,30 @@ def grafo():
 				costos[nodeList[i],nodeList[j]]=k
 
 ##Dijkstra
-def dijkstra():
-	
+def dijkstra():	
+	n=len(nodeList)
+	nextList=queue.PriorityQueue(n)
+	#Agrega el primer objetivo, es decir la primera galleta
+	actual_goal = galletas.get()
+	nextList.put(actual_goal,0)
+	came_from ={}
+	cost_so_far={}
+	came_from[actual_goal] = None
+	cost_so_far[actual_goal] = 0
+
+	while not nextList.empty()
+		actual = 	nextList.get()
+
+		if actual == actual_goal:
+			break
+		
+		for  next in actual.darVecinos:
+			newCost = cost_so_far[actual] + costos[actual, next]
+			if next not in cost_so_far or newCost < cost_so_far[next]
+			cost_so_far[next] = newCost
+			nextList.put(next, newCost)
+			came_from[next]=actual
+			#Hay que revisar e implementar el movimiento del pacman
 
 
 class nodo: 
@@ -105,6 +137,9 @@ class nodo:
 		
 		def darY():
 			return self.pos[1]
+		
+		def darVecinos():
+			return vecinos
 
     def asignarPadre(self, padre):
 		self.padre = padre
@@ -121,12 +156,7 @@ class nodo:
     def esObjetivo(self, objetivo):
 		self.objetivo = objetivo       
 		
-try:
-	import Queue as queue
-except ImportError:
-	import queue
-n=10
-nextList=queue.PriorityQueue(n)
+
 
 
 
