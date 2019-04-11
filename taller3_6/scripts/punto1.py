@@ -24,13 +24,24 @@ def iniciar():
 	dimY=mapa.maxY - mapa.minY + 1
 	matriz = [[" "  for i in range(dimX)]for j in range(dimY)]
 	actual = 2
-	rospy.Subscriber("pacmanCoord0", pacmanPos, Dijkstra) # CUANDO HAGAMOS DIJKSTRA
+	rospy.Subscriber("pacmanCoord0", pacmanPos, dijkstra) # CUANDO HAGAMOS DIJKSTRA
 	##Se guardan en la matriz los obstaculos
 	for i in range(mapa.nObs):
 		matriz[-mapa.obs[i].y - mapa.minY][mapa.obs[i].x - mapa.minX] = "%"
 	##Se guardan en la matriz las galletas
 	for i in range(data.nCookies):
 		matriz[-data.cookiesPos[i].y - mapa.minY][data.cookiesPos[i].x - mapa.minX] = "."
+	##Metodo convertir matriz en grafo
+	grafo()
+
+	itera = 0
+	tasa = rospy.Rate(10)
+	while not rospy.is_shutdown():
+		tasa.sleep()
+
+##Metodo convertir matriz en grafo
+def grafo():
+	global matriz, nodeList, costos
 	##En primer lugar, se crea una lista con los nodos, los cuales corresponden a las esquinas
 	#lista de nodos
 	nodeList=[]
@@ -47,38 +58,36 @@ def iniciar():
 				numLibres=numLibres+1
 		#Falta mirar esquinas**
 		if(numLibres>=2):
-			nodeList.append(Nodo([i , j]),False)
+			nodeList.append(Nodo([i, j]),False)
 		elif (matriz[i][j]== "."):
-			nodeList.append(Nodo([i , j]),True)
+			nodeList.append(Nodo([i, j]),True)
 	#Teniendo los vertices o nodos, se procede a construir los arcos
+	
 	for i in range(len(nodeList)):
 		for j in range(i+1,len(nodeList)):
+			costos = {[nodeList[i],nodeList[j]] : 0}
 			if(nodeList[i].darX == nodeList[j].darX):
 				#Revisar
-				for k in range(nodeList[i].darY, nodeList[j].darY):
+				while k in range(nodeList[i].darY, nodeList[j].darY) and obstaculo==False:
 					if(matriz[nodeList[i].darX][nodeList[k].darY+1] == "%")
-						break
+						obstaculo=True
 					else:
 						pass
 			elif (nodeList[i].darY == nodeList[j].darY):
-				for k in range(nodeList[i].darY, nodeList[j].darY):
+				while k in range(nodeList[i].darY, nodeList[j].darY) and obstaculo==False:
 					if(matriz[nodeList[i].darX][nodeList[k].darY+1] == "%")
-						break
+						obstaculo=True
 					else:
 						pass
+			if(obstaculo==False):
+				nodeList[i].agregarVecinos(nodeList[j])
+				nodeList[j].agregarVecinos(nodeList[i])
+				#notSure
+				costos[nodeList[i],nodeList[j]]=k
 
-
-
-	##Metodo convertir matriz en grafo
-	grafo()
-
-	itera = 0
-	tasa = rospy.Rate(10)
-	while not rospy.is_shutdown():
-		tasa.sleep()
-def grafo():
-	global matriz, graf
-
+##Dijkstra
+def dijkstra():
+	
 
 
 class nodo: 
