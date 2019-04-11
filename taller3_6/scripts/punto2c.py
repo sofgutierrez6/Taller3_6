@@ -35,6 +35,7 @@ def arrancar():
 	time.sleep(1)
 	crearCuadricula()
 	threading.Thread(target=control).start()
+	threading.Thread(target=plotPos).start()
 	try:
 		while not rospy.is_shutdown():
 			tasa.sleep()
@@ -167,7 +168,7 @@ def buscarMejor(nodos):
 	return best
 
 def control():
-	global posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, bandera
+	global posix, posiy, lastheta, vec, xfin, yfin, thetafin, bandera
 	rho = 10
 	beta = 20
 	x_vec,y_vec = Astar()
@@ -194,16 +195,6 @@ def control():
 				beta = beta - 2*pi
 			elif (beta <= -2*math.pi):
 				beta = beta + 2*pi
-			if (primero):
-				'''if (alpha < -math.pi/2 or alpha > math.pi/2):  ## Si el objetivo no esta frente al robot es necesario moverlo hacia atras
-					kb = -0.06
-					kp = -0.3
-					ka = -0.2
-				else:
-					kb = 0.1
-					kp = 0.4
-					ka = 1.3'''
-				primero = False
 			kb = 0.07
 			kp = 0.6
 			ka = 1.8
@@ -217,7 +208,6 @@ def control():
 				return False
 		rho = 10
 		beta = 20
-		primero = True
 	beta = 0.5
 	while abs(beta) >= 0.01:
 		kb = 0.3
@@ -274,7 +264,7 @@ def ThreadInputs():
 		listener.join()
 
 if __name__ == '__main__':	
-	global obs, bandera, primero, posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, matriz, matNod, xplot, yplot
+	global obs, bandera, posix, posiy, lastheta, vec, xfin, yfin, thetafin, matriz, matNod, xplot, yplot
 	obs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 	posix = [0]
 	posiy = [0]
@@ -284,13 +274,11 @@ if __name__ == '__main__':
 	matriz = [[0  for i in range(200)]for j in range(200)]
 	matNod = [[Nodo([i , j]) for i in range(200)]for j in range(200)]
 	bandera = False
-	primero = True
 	xfin = 0
 	yfin = 0
 	lastheta = 0
 	thetafin = 0
 	try:
-		threading.Thread(target=plotPos).start()
 		threading.Thread(target=ThreadInputs).start()
 		arrancar()
 	except rospy.ServiceException:
