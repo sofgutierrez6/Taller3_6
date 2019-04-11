@@ -251,10 +251,15 @@ def plotPos():
 		plt.clf()
 		plt.plot(posix,posiy)
 		plt.plot(xplot,yplot,'p')
+		plt.ylabel('Posicion en y')
+		plt.xlabel('Posicion en x')	###Mientras el robot se mueve se muestran en una grafica la posicion simulada
+		plt.title('Posicion del robot')
 		plt.draw()
 		if bandera:
+			plt.savefig('src/Taller3_6/taller3_6/results/graficaPunto2c.png')
+			plt.close()
 			return False
-		plt.pause(0.8)
+		plt.pause(0.5)
 
 def keypress(key):
 	global bandera
