@@ -52,8 +52,9 @@ def arrancar():
 	]  # [x,y,size]
 	rrt = RRT(start=[0, 0], goal=[xfin, yfin],randArea=[-5, 45], obstacleList=obstacleList)
 	path = rrt.Planning()
-	print 'Here'
-	threading.Thread(target=control).start()  
+	crearCuadricula()
+	threading.Thread(target=plotPos).start()
+	threading.Thread(target=control).start()
     # Draw final path
 	'''if show_animation:  # pragma: no cover
 		plt.plot([x for (x, y) in path], [y for (x, y) in path], '-r')
@@ -76,6 +77,20 @@ def publicar():
 	global vec
 	pub.publish(data = [vec[1],vec[0]])
 
+def crearCuadricula():
+	global obs, xplot, yplot
+	x = [(5 + obs[0])/0.25 , (5 + obs[1])/0.25 , (5 + obs[2])/0.25 , (5 + obs[3])/0.25 , (5 + obs[4])/0.25]
+	y = [(5 + obs[5])/0.25 , (5 + obs[6])/0.25 , (5 + obs[7])/0.25 , (5 + obs[8])/0.25 , (5 + obs[9])/0.25]
+	r = [obs[10]/0.25 , obs[11]/0.25 , obs[12]/0.25 , obs[13]/0.25 , obs[14]/0.25]
+	for i in range(len(x)):
+		for j in range(int(x[i]-r[i]-robot)-1, int(x[i]+r[i]+robot+1)):
+			for k in range(int(y[i]-r[i]-robot)-1, int(y[i]+r[i]+robot+1)):
+				dist = np.linalg.norm(np.array([x[i],y[i]]) - np.array([j+0.5,k+0.5]))
+				if dist <= r[i]+robot:
+					x.append(j)
+					y.append(k)
+	xplot = list(map(lambda x: -5 + (0.25*x), x))
+	yplot = list(map(lambda x: -5 + (0.25*x), y))
 
 class RRT():
     """
@@ -100,7 +115,7 @@ class RRT():
         self.maxIter = maxIter
         self.obstacleList = obstacleList
 
-    def Planning(self, animation=True):
+    def Planning(self, animation=False):
         """
         Pathplanning
         animation: flag for animation on or off
@@ -174,6 +189,7 @@ class RRT():
         plt.plot(self.end.x, self.end.y, "xr")
         plt.axis([-2, 15, -2, 15])
         plt.grid(True)
+        plt.pause(0.01)
 
     def GetNearestListIndex(self, nodeList, rnd):
         dlist = [(node.x - rnd[0]) ** 2 + (node.y - rnd[1])
@@ -297,10 +313,15 @@ def plotPos():
 		plt.clf()
 		plt.plot(posix,posiy)
 		plt.plot(xplot,yplot,'p')
+		plt.ylabel('Posicion en y')
+		plt.xlabel('Posicion en x')	###Mientras el robot se mueve se muestran en una grafica la posicion simulada
+		plt.title('Posicion del robot')
 		plt.draw()
 		if bandera:
+			plt.savefig('src/Taller3_6/taller3_6/results/graficaPunto2e.png')
+			plt.close()
 			return False
-		plt.pause(0.8)
+		plt.pause(0.5)
 
 
 
