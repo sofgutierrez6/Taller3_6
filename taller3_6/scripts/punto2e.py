@@ -6,6 +6,7 @@
 
 import rospy
 from std_msgs.msg import Float32MultiArray, Float32
+from geometry_msgs.msg import Twist
 from pylab import *
 from pynput.keyboard import Key, Listener 
 import matplotlib.pyplot as plt
@@ -27,10 +28,10 @@ pub = rospy.Publisher('/motorsVel', Float32MultiArray, queue_size=10)
 
 
 def arrancar():
-    global xfin, yfin, thetafin
+	global xfin, yfin, thetafin, obstacleList, path, obs
 	rospy.init_node('punto2e', anonymous = True)
-	rospy.Subscriber('/obstacles', Float32MultiArray ,obstacles)
-    rospy.Subscriber('/pioneerPosition', Twist ,vecto)
+	rospy.Subscriber('/obstacles', Float32MultiArray , obstacles)
+	rospy.Subscriber('/pioneerPosition', Twist ,vecto)
 	tasa = rospy.Rate(10)
 	rospy.myargv(argv=sys.argv)
 	try:
@@ -38,33 +39,31 @@ def arrancar():
 		yfin = float(sys.argv[2])
 		thetafin = float(sys.argv[3])
 	except:    								##Tratamiento de los argumentos ingresador por el usuario
-		xfin = 40
-		yfin = 40
+		xfin = 2.5
+		yfin = 2.5
 		thetafin = math.pi/2
-
-        obstacleList = [
-        (obs[0],obs[5],obs[10]), 
-        (obs[1],obs[6],obs[11]),
-        (obs[2],obs[7],obs[12]), 
-        (obs[3],obs[8],obs[13]),
-        (obs[4],obs[9],obs[14])
-        ]  # [x,y,size]
-
-    time.sleep(1)
+	time.sleep(1)
+	obstacleList = [
+	(obs[0],obs[5],(2*obs[10])+0.4), 
+	(obs[1],obs[6],(2*obs[11])+0.4),
+	(obs[2],obs[7],(2*obs[12])+0.4), 
+	(obs[3],obs[8],(2*obs[13])+0.4),
+	(obs[4],obs[9],(2*obs[14])+0.4)
+	]  # [x,y,size]
+	rrt = RRT(start=[0, 0], goal=[xfin, yfin],randArea=[-5, 45], obstacleList=obstacleList)
+	path = rrt.Planning()
+	print 'Here'
 	threading.Thread(target=control).start()  
-
-    path = rrt.Planning(animation=show_animation)
-
     # Draw final path
-    if show_animation:  # pragma: no cover
-        rrt.DrawGraph()
-        plt.plot([x for (x, y) in path], [y for (x, y) in path], '-r')
-        plt.grid(True)
-        plt.show()
+	'''if show_animation:  # pragma: no cover
+		plt.plot([x for (x, y) in path], [y for (x, y) in path], '-r')
+		plt.grid(True)
+		plt.show()'''
 	
 	try:
 		while not rospy.is_shutdown():
 			tasa.sleep()
+			publicar()
 	except rospy.ServiceException as e:
 		pass
     
@@ -78,15 +77,13 @@ def publicar():
 	pub.publish(data = [vec[1],vec[0]])
 
 
-
-
 class RRT():
     """
     Class for RRT Planning
     """
 
     def __init__(self, start, goal, obstacleList,
-                 randArea, expandDis=1.0, goalSampleRate=5, maxIter=500):
+                 randArea, expandDis=0.25, goalSampleRate=5, maxIter=500):
         """
         Setting Parameter
         start:Start Position [x,y]
@@ -177,7 +174,6 @@ class RRT():
         plt.plot(self.end.x, self.end.y, "xr")
         plt.axis([-2, 15, -2, 15])
         plt.grid(True)
-        plt.pause(0.01)
 
     def GetNearestListIndex(self, nodeList, rnd):
         dlist = [(node.x - rnd[0]) ** 2 + (node.y - rnd[1])
@@ -198,8 +194,6 @@ class RRT():
 
 
 class Node():
-    
-
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -212,12 +206,14 @@ def R(theta): ##funcion que retorna la matriz de rotacion
 
 
 def control():
-	global posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, bandera
+	global posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, bandera, path
 	rho = 10
 	beta = 20
-	x_vec,y_vec = RRT(start=[0, 0], goal=[xfin, yfin],
-              randArea=[-5, 45], obstacleList=obstacleList)
-
+	x_vec = []
+	y_vec = []
+	for vec in path:
+		x_vec.append(vec[0])
+		y_vec.append(vec[1])
 	x_vec.reverse()
 	y_vec.reverse()
 	for i in range(len(x_vec)):
@@ -280,7 +276,6 @@ def control():
 		time.sleep(0.2)
 		if bandera:
 			return False
-	plt.close()
 	bandera = True
 	vec = [0,0]
 	return False
@@ -294,6 +289,7 @@ def vecto(data): ##Funcion que manipula la informacion con la posicion del robot
 	posix.append(xact)
 	posiy.append(yact)  ##Se agregan dichos valores a un vector para mostrarlos en pantalla
 	lastheta = data.angular.z  ## Se guarda el ultimo theta obtenido en simulacion 
+
 
 def plotPos():
 	global posix, posiy, xplot, yplot
@@ -322,21 +318,18 @@ def ThreadInputs():
 
 
 
-
-
-
 if __name__ == '__main__':
 	global obs, bandera, primero, posix, posiy, lastheta, primero, vec, xfin, yfin, thetafin, matriz, matNod, xplot, yplot
 	obs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    posix = [0]
+	posix = [0]
 	posiy = [0]
 	xplot = [0]
 	yplot = [0]
 	vec = [0,0]
 	matriz = [[0  for i in range(200)]for j in range(200)]
-	matNod = [[Nodo([i , j]) for i in range(200)]for j in range(200)]
+	#matNod = [[Nodo([i , j]) for i in range(200)]for j in range(200)]
 	bandera = False
-    primero = True
+	primero = True
 	xfin = 0
 	yfin = 0
 	lastheta = 0
@@ -345,7 +338,7 @@ if __name__ == '__main__':
 		threading.Thread(target=ThreadInputs).start()
 		arrancar()
 	except rospy.ServiceException:
-pass
+		pass
 
 
 
