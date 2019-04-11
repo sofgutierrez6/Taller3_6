@@ -108,7 +108,6 @@ class Nodo:
 	def esObjetivo(self, objetivo):
 		self.objetivo = objetivo
 		
-		
 def Astar():
 	global bandera, xfin, yfin, posix, posiy, matNod
 	for fil in matNod:
@@ -134,10 +133,10 @@ def Astar():
 			break
 		vecinos = actual.vecinos
 		for vecino in vecinos:
-			costo = costos[actual] + 0.25
+			costo = costos[actual] + actual.defHeu(vecino.coord)
 			if (vecino not in explorados and not vecino.visitado) or costo < costos[vecino]:
 				costos[vecino] = costo
-				vecino.cambiarCosto(costo + vecino.defHeu(pos_f))
+				vecino.cambiarCosto(10*costo + 4*vecino.defHeu(pos_f))
 				vecino.asignarPadre(actual)
 				explorados.append(vecino)
 	rutax = []
