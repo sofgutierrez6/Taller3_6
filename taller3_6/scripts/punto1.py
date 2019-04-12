@@ -6,9 +6,12 @@ import matplotlib.pyplot as plt
 import threading
 import time
 import sys
-from pacman.msg import actions
+
 from pacman.srv import mapService
+#Se importan los tipos de Mensajes
+from pacman.msg import actions
 from pacman.msg import pacmanPos
+from pacman.msg import cookiesPos #se importan los mensajes que indican la posicion de las galletas
 
 #Importar colas, pilas y de prioridad
 try:
@@ -30,13 +33,14 @@ def iniciar():
 	dimY=mapa.maxY - mapa.minY + 1
 	matriz = [[" "  for i in range(dimX)]for j in range(dimY)]
 	actual = 2
+	#Subscriptions
 	rospy.Subscriber("pacmanCoord0", pacmanPos, dijkstra) # CUANDO HAGAMOS DIJKSTRA
+	rospy.Subscriber("cookiesCoord", cookiesPos, guardarCookies) #se suscribe el nodo al topico que envia la posicion de las galletas
 	##Se guardan en la matriz los obstaculos
 	for i in range(mapa.nObs):
 		matriz[-mapa.obs[i].y - mapa.minY][mapa.obs[i].x - mapa.minX] = "%"
 	##Se guardan en la matriz las galletas
-	for i in range(data.nCookies):
-		matriz[-data.cookiesPos[i].y - mapa.minY][data.cookiesPos[i].x - mapa.minX] = "."
+	
 	##Metodo convertir matriz en grafo
 	grafo()
 
@@ -45,33 +49,39 @@ def iniciar():
 	while not rospy.is_shutdown():
 		tasa.sleep()
 
+def guardarCookies(data):
+	global cookies, data, mapa
+	cookies=queue.Queue(data.nCookies) #lista de objetivos (galletas)
+	for i in range(data.nCookies):
+		cookies[i]=[data.cookiesPos[i].x,data.cookiesPos[i].y]
+		matriz[-data.cookiesPos[i].y - mapa.minY][data.cookiesPos[i].x - mapa.minX] = "."
+
 ##Metodo convertir matriz en grafo
 def grafo():
 	global matriz, nodeList, costos, galletas
 	##En primer lugar, se crea una lista con los nodos, los cuales corresponden a las esquinas
-	#lista de nodos
-	nodeList=[]
-	galletas=queue.Queue(data.nCookies)
+	nodeList=[] #lista de nodos
+	
 	for i in range(dimX):
 		for j in range(dimY):
-			numLibres=0
-			if(matriz[i][j+1]==" "):
-				numLibres=numLibres+1
-			if(matriz[i][j-1]==" "):
-				numLibres=numLibres+1
-			if(matriz[i+1][j]==" "):
-				numLibres=numLibres+1
-			if(matriz[i-1][j]==" "):
-				numLibres=numLibres+1
-		#Falta mirar esquinas**
-		if(numLibres>=2):
+			libre=False
+			if((matriz[i][j-1]==" ") and (matriz[i-1][j]==" ")):
+				libre=True
+			if((matriz[i-1][j]==" ") and (matriz[i][j+1]==" ")):
+				libre=True
+			if((matriz[i][j+1]==" ") and (matriz[i+1][j]==" ")):
+				libre=True
+			if((matriz[i][j-1]==" ") and (matriz[i+1][j]==" ")):
+				libre=True
+		#Falta mirar esquinas, revisar, complicarse menos****
+		if(libre):
 			nodeList.append(Nodo([i, j],False))
 			#Si es galleta
 		elif (matriz[i][j]== "."):
 			nodeList.append(Nodo([i, j],True))
 			galletas.append(Nodo([i, j],True))
+
 	#Teniendo los vertices o nodos, se procede a construir los arcos
-	
 	for i in range(len(nodeList)):
 		for j in range(i+1,len(nodeList)):
 			#notSure
@@ -96,12 +106,20 @@ def grafo():
 				costos[nodeList[i],nodeList[j]]=k
 
 ##Dijkstra
-def dijkstra():	
+def dijkstra(data):	
+	global matriz,nodeList
+	#posicion inicial del pacman
+	#Se puede crear un conflicto por lo que la pos se va actualizando??**
+	start=Nodo(data.pos, False)
+	nodeList.append(start)
+	#Falta mirar lo de ponerle costo cero... 
 	n=len(nodeList)
 	nextList=queue.PriorityQueue(n)
-	#Agrega el primer objetivo, es decir la primera galleta
+	
+	nextList.put(,0)
 	actual_goal = galletas.get()
-	nextList.put(actual_goal,0)
+	#nextList.put(actual_goal,0)
+	
 	came_from ={}
 	cost_so_far={}
 	came_from[actual_goal] = None
@@ -115,14 +133,20 @@ def dijkstra():
 		
 		for  next in actual.darVecinos:
 			newCost = cost_so_far[actual] + costos[actual, next]
-			if next not in cost_so_far or newCost < cost_so_far[next]
-			cost_so_far[next] = newCost
-			nextList.put(next, newCost)
-			came_from[next]=actual
+			if next not in cost_so_far or newCost < cost_so_far[next]:
+				cost_so_far[next] = newCost
+				nextList.put(next, newCost)
+				came_from[next]=actual
 			#Hay que revisar e implementar el movimiento del pacman
 
 
-class nodo: 
+
+	
+	
+	
+	
+
+class Nodo: 
     def __init__(self, pos, cookie):
 		self.pos = pos
 		self.cookie = cookie
