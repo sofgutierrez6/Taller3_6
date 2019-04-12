@@ -22,7 +22,7 @@ try:
 pub = rospy.Publisher('pacmanActions0', actions, queue_size=10)	## Publicador que controla al  pacman con el algoritmo d
 def iniciar():
 	##Variables globales que permiten el manejo del mapa (matriz), actual * almacenamiento del mapa. Itera es la variable que verifica cuantas veces se ha verificado la direccion de la derecha del pacman
-	global matriz, actual, mapa, itera
+	global matriz, actual, mapa, itera, galletas
 	
 	##Se inicializa el nodo
 	rospy.init_node('punto1Taller3', anonymous = False)
@@ -34,13 +34,13 @@ def iniciar():
 	matriz = [[" "  for i in range(dimX)]for j in range(dimY)]
 	actual = 2
 	#Subscriptions
-	rospy.Subscriber("pacmanCoord0", pacmanPos, dijkstra) # CUANDO HAGAMOS DIJKSTRA
+	rospy.Subscriber("pacmanCoord0", pacmanPos, verifyGoal) # Verificar donde meter DIJKSTRA
 	rospy.Subscriber("cookiesCoord", cookiesPos, guardarCookies) #se suscribe el nodo al topico que envia la posicion de las galletas
 	##Se guardan en la matriz los obstaculos
 	for i in range(mapa.nObs):
 		matriz[-mapa.obs[i].y - mapa.minY][mapa.obs[i].x - mapa.minX] = "%"
 	##Se guardan en la matriz las galletas
-	
+	guardarCookies(data)
 	##Metodo convertir matriz en grafo
 	grafo()
 
@@ -48,6 +48,12 @@ def iniciar():
 	tasa = rospy.Rate(10)
 	while not rospy.is_shutdown():
 		tasa.sleep()
+def verifyGoal():
+	llego=False
+	if():
+		llego=True
+	return llego
+
 
 def guardarCookies(data):
 	global cookies, data, mapa
@@ -107,7 +113,7 @@ def grafo():
 
 ##Dijkstra
 def dijkstra(data):	
-	global matriz,nodeList
+	global matriz,nodeList, came_from, galletas, actual_goal
 	#posicion inicial del pacman
 	#Se puede crear un conflicto por lo que la pos se va actualizando??**
 	start=Nodo(data.pos, False)
@@ -117,7 +123,7 @@ def dijkstra(data):
 	nextList=queue.PriorityQueue(n)
 	
 	nextList.put(,0)
-	actual_goal = galletas.get()
+	actual_goal = galletas.pop(0)
 	#nextList.put(actual_goal,0)
 	
 	came_from ={}
@@ -139,10 +145,49 @@ def dijkstra(data):
 				came_from[next]=actual
 			#Hay que revisar e implementar el movimiento del pacman
 
+def moverPacman():
+	global came_from, nextNode, actual_goal
+	nextNode=[]
+	nextNode[0]= actual_goal
+	anterior=nextNode[0]
+	i=1
+	#Se reconstruye la ruta
+	for nodo in came_from:
+		anterior = came_from.pop(anterior)
+		nextNode[i]=anterior
+		i = i+1
+	for	j in range(len(nextNode),0,-1):
+		sig = nextNode[j]
+		act= nextNode[j-1]
+		#Revisar movimientos en la matriz
+		if(sig.darX==act.darX):
+			if(sig.darY>act.darY):
+				move= 'right'
+			elif(sig.darY<act.darY):
+				move= 'left'
+			else
+				move = 'nada'
+		elif (sig.darY==act.darY):
+			if(sig.darX>act.darX):
+				move= 'up'
+			elif(sig.darX<act.darX):
+				move= 'down'
+			else
+				move = 'nada'
+		else
+			move = 'nada'
 
+	mensajes = {'left':3, 'up':0, 'down':1, 'right':2, 'nada':4}
+	action = int(mensajes[move])
+	pub.publish(action)
 
-	
-	
+## Main
+if __name__ == '__main__':
+	try:
+		iniciar()
+		moverPacman()
+	except rospy.ServiceException:
+		pass	
 	
 	
 
