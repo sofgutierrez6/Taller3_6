@@ -1,9 +1,5 @@
 import rospy
 from std_msgs.msg import Float32MultiArray, Float32
-from pylab import *
-from pynput.keyboard import Key, Listener 
-import matplotlib.pyplot as plt
-import threading
 import time
 import sys
 import numpy as np
