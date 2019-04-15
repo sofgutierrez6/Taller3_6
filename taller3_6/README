@@ -25,13 +25,16 @@ EJECUCION
                    		 --c: Challenge 
                    	 	 --g: Game 
        		 options   : Nombre del mapa si se elige Challenge 
-Para el inciso a:  Correr
-		rosrun pacman pacman_world --c mediumCorners
+Para el inciso e:  Correr
+			rosrun pacman pacman_world --c mediumCorners
 	7. Abrir una nueva terminal
 	8. Usando cd llegar a la carpeta catkin_ws
 	9. Ejecutar source devel/setup.bash
 	10. Ejecutar rosrun taller3_6 punto1.py
-Si desea usarse el mapa implementado es necesario copiarlo de la carpeta resources (punto1g.lay) y pegarlo en la carpeta resources/layouts dentro del package de ros-pacman 
+
+Para el inciso g:  Correr
+			rosrun pacman pacman_world --c punto1g
+	donde "punto1g" corresponde al mapa implementado. Por lo tanto es necesario copiarlo de la carpeta resources (punto1g.lay) y pegarlo en la carpeta resources/layouts dentro del package de ros-pacman 
 
 Punto 2
 
