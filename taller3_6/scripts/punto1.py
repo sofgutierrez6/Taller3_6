@@ -87,7 +87,7 @@ def guardarCookies(data):
 			#Tambien se guardan en la matriz
 			matriz[-data.cookiesPos[i].y - mapa.minY][data.cookiesPos[i].x - mapa.minX] = "."
 			#cookiesYa es una bandera que permite cargarsolamente una vez las galletas
-			cookiesYa = True
+			cookiesYa = False
 
 ##Metodo convertir matriz en grafo
 def grafo():
