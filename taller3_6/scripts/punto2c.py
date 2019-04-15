@@ -197,6 +197,7 @@ def control():
 				beta = beta - 2*pi
 			elif (beta <= -2*math.pi):
 				beta = beta + 2*pi
+			#Se definen las constantes de control proporcional por sintonizacion
 			kb = 0.07
 			kp = 0.6
 			ka = 1.8
@@ -237,7 +238,7 @@ def vecto(data): ##Funcion que manipula la informacion con la posicion del robot
 	posix.append(xact)
 	posiy.append(yact)  ##Se agregan dichos valores a un vector para mostrarlos en pantalla
 	lastheta = data.angular.z  ## Se guarda el ultimo theta obtenido en simulacion 
-
+#Metodo que grafica la posicion actual del robot y guarda la grafica
 def plotPos():
 	global posix, posiy, xplot, yplot
 	while True:
@@ -260,7 +261,7 @@ def keypress(key):
 		bandera = True
 		print "fin" 	##Se usa la tecla Esc para terminar los diferentes hilos implementados
 		return False
-		
+#Thread para que cuando presione la tecla escape se cierre y quede la grafica		
 def ThreadInputs():
 	with Listener(on_press = keypress) as listener:
 		listener.join()
