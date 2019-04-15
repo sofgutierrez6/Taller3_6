@@ -7,6 +7,7 @@ COMPILACION
 	4. Correr 
 		cd catkin_ws
 		catkin_make
+		cd src/taller3_6/scripts
 		chmod +x *
 		cd ..
 		cd ..
