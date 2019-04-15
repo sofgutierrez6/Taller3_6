@@ -35,7 +35,7 @@ def crearCuadricula(): ##Funcion para crear la matriz que representa el mapa de 
 		for i in range(len(x)):  
 			matriz[int(x[i])][int(y[i])] = 1    ##La matriz representa el mapa con 0 para espacio libre y 1 para celdas ocupadas por un obstaculo 
 			for j in range(int(x[i]-r[i]-robot)-1, int(x[i]+r[i]+robot)): ##Para cada obstaculo se verifica la vecindad de celdas que pueden tener parte del obstaculo
-				for k in range(int(y[i]-r[i]-robot)-1, int(y[i]+r[i]+robot)): #Se tiene en cuenta el tamaño del robot (se inflan los obstaculos)
+				for k in range(int(y[i]-r[i]-robot)-1, int(y[i]+r[i]+robot)): #Se tiene en cuenta el tamano del robot (se inflan los obstaculos)
 					dist = np.linalg.norm(np.array([x[i],y[i]]) - np.array([j+0.5,k+0.5]))
 					if dist <= r[i]+robot:
 						matriz[j][k] = 1
