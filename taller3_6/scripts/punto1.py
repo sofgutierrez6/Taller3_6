@@ -26,7 +26,7 @@ def iniciar():
 	##Variables globales que permiten el manejo del mapa en una matriz, como tambien el acceso a sus dimensiones
 	#actual_goal representa el nodo donde esta la galleta a la cual se quiere llegar
 	#cookies la lista de galletas
-	#nodeList la lista de nodos basados en el mapa/matriz
+	#nodeList la matriz de nodos basados en el mapa
 	global matriz, mapa, cookies, dimX, dimY, actual_goal, cookies, nodeList
 	
 	##Se inicializa el nodo
@@ -39,26 +39,30 @@ def iniciar():
 	##Inicializacion de la matriz
 	dimX = mapa.maxX - mapa.minX + 1
 	dimY = mapa.maxY - mapa.minY + 1
-	#n es el numero de filas
-	#m es el numero de columnas
 	matriz = [[" "  for i in range(dimX)]for j in range(dimY)]
+	
+	#Matriz con los nodos
 	nodeList = [[Nodo([i,j]) for i in range (dimX)] for j in range (dimY)]
-	#actual = 2
+	
 	#Subscriptions
 	rospy.Subscriber("pacmanCoord0", pacmanPos, verifyGoal) 
 	rospy.Subscriber("cookiesCoord", cookiesPos, guardarCookies)
 	time.sleep(0.2)
-	#se suscribe el nodo al topico que envia la posicion de las galletas
+	
 	##Se guardan en la matriz los obstaculos
 	for i in range(mapa.nObs):
 		matriz[-mapa.obs[i].y - mapa.minY][mapa.obs[i].x - mapa.minX] = "%"
-	#cookies.append(Nodo([data.cookiesPos[0].x,data.cookiesPos[0].y],True))
-	#actual_goal=cookies.pop(0)
+	
+	#Metodo para generar el grafo
 	grafo()
+	
+	#Ciclo logico de ejecucion del nodo 
 	tasa = rospy.Rate(10)
 	while not rospy.is_shutdown():
 		if (len(cookies) != 0):
+			#En donde se calcula la ruta por medio del metodo dijkstra
 			dijkstra()
+			#Posteriormente se realizan los movientos del pacamn con base a la ruta calculada en el metodo anterior
 			moverPacman()
 		tasa.sleep()
 
@@ -80,7 +84,9 @@ def guardarCookies(data):
 			#cookies.put(Nodo([data.cookiesPos[i].x,data.cookiesPos[i].y],True))
 			cookies.append(Nodo([-data.cookiesPos[i].y - mapa.minY , data.cookiesPos[i].x - mapa.minX]))
 			print data.cookiesPos[i].x - mapa.minX, -data.cookiesPos[i].y - mapa.minY , 
+			#Tambien se guardan en la matriz
 			matriz[-data.cookiesPos[i].y - mapa.minY][data.cookiesPos[i].x - mapa.minX] = "."
+			#cookiesYa es una bandera que permite cargarsolamente una vez las galletas
 			cookiesYa = False
 
 ##Metodo convertir matriz en grafo
@@ -89,7 +95,9 @@ def grafo():
 	for i in range (dimX):
 		for j in range (dimY):
 			nodoActual = nodeList[j][i]
+			#Se verifica si es un espacio libre o una galleta
 			if (matriz[j][i] == " " or matriz[j][i] == "."):
+				#Se verifican si los nodos adyacentes están libres o son una galleta, en dicho caso es una casilla factible por lo tanto se agregan a los vecino
 				if (j+1 < dimY and (matriz[j+1][i] == " " or matriz[j+1][i] == ".")):
 					nodoActual.agregarVecinos(nodeList[j+1][i])
 				if (i+1 < dimX and (matriz[j][i+1] == " " or matriz[j][i+1] == ".")):
@@ -102,29 +110,45 @@ def grafo():
 ##Dijkstra
 def dijkstra():	
 	global matriz ,nodeList, came_from, cookies, actual_goal, llego, posActX, posActY, primera, dimX, dimY, actual
-	#posicion inicial del pacman
+	#Se verifica si se llego al objetivo o si es la primera vez que se corre ya que si es la primera el nodo corresponde a la posicion inicial y no ala posicion de una galleta
 	if (llego or primera):
 		primera = False
+		#Se actualiza el nodoa ctual
 		actual = buscarNodo(posActX,posActY)
-		#Tamanio de la lista de nodos
+		#Se inicializa la cola de prioridad
 		nextList = queue.PriorityQueue(dimX*dimY)
+		#Se agrega el nodo actual a la cola de prioridad
 		nextList.put((0,actual))
+		#El objetivo será la galleta más cercana
 		actual_goal = masCercana()
+		#Diccionario con entrada nodo que devulve el nodo de donde vino
 		came_from = {}
+		#Diccionario con los costos acomulados
 		cost_so_far = {}
+		#acutal alse elprimer nodo tienen costo cero y no vienen de ninguno
 		came_from[actual] = None
 		cost_so_far[actual] = 0
-
+		
+		#Se recorren los nodos
 		while not nextList.empty():
+			#Se obtienen el siguiente nodo y su costo y se almacenan en la variable tupla
 			tupla = nextList.get()
+			#Se obtiene el siguiente nodo
 			actual = tupla[1]
+			#Se verifica si ya llegó al objetivo, en caso de que si se termina el método
 			if (actual.darY() == actual_goal.darX() and actual.darX() == actual_goal.darY()):
 				break
+			#Se exploran los vecinos
 			for next in actual.vecinos:
+				#Se actualiza el costo acomulado hasta el nodo
 				newCost = cost_so_far[actual] + 1
+				#Si hay un costo menor se pone como siguiente nodo, y se agrega al diccionario de donde vino
 				if next not in cost_so_far or newCost < cost_so_far[next]:
+					#Se acualiza el costo acomulado
 					cost_so_far[next] = newCost
+					#Se pone en la cola de prioridad de siguientes
 					nextList.put((newCost,next))
+					#Se pone de donde vino
 					came_from[next] = actual
 	
 def buscarNodo(x,y):
