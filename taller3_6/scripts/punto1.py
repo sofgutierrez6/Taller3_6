@@ -203,7 +203,7 @@ def moverPacman():
 		act = nextNode[j]
 		#Si las posiciones act y sig son iguales significa que llegó
 		while (posActX != sig.darX() or posActY != sig.darY()):
-			#
+			#Se realiza la logica de movimientos dependiendo de las coordenadas
 			if(sig.darX() == act.darX()):
 				if(sig.darY() > act.darY()):
 					move = 'down'
@@ -220,13 +220,16 @@ def moverPacman():
 					move = 'nada'
 			else:
 				move = 'nada'
-			mensajes = {'left':3, 'up':0, 'down':1, 'right':2, 'nada':4}
+			#Se obtiene el numero a publicar
 			action = int(mensajes[move])
+			#Se publica
 			pub.publish(action)
 
 	action = int(mensajes[move])
 	pub.publish(action)
-
+	
+	
+##Clase interna nodo
 class Nodo: 
 	def __init__(self, pos):
 		self.pos = pos
@@ -262,10 +265,12 @@ class Nodo:
 if __name__ == '__main__':
 	try:
 		global cookies, actual_goal, primera, cookiesYa
+		#Se inicializan las variables
 		actual_goal  = Nodo([-1,-1])
 		primera = True
 		cookiesYa = True
 		cookies = []
+		#Se inicia el algoritmo
 		iniciar()		
 	except rospy.ServiceException:
 		pass	
