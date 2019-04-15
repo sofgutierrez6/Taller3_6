@@ -25,7 +25,7 @@ def obstacles(data):
 	global obs   ## En la variable obs se guardan la posicion y tamano de los obstaculos recibidos de la simulacion
 	obs = data.data
 	
-def crearCuadricula(): ##Metodo para crear la matriz que representa el mapa de la escena
+def crearCuadricula(): ##Funcion para crear la matriz que representa el mapa de la escena
 	global obs, xplot, yplot, matriz 
 	while True:
 		matriz = [[0  for i in range(500)]for j in range(500)] ##Se divide el mapa en celdas de 0.1m 
@@ -33,42 +33,42 @@ def crearCuadricula(): ##Metodo para crear la matriz que representa el mapa de l
 		y = [(5+obs[5])/0.1 , (5+obs[6])/0.1 , (5+obs[7])/0.1 , (5+obs[8])/0.1 , (5+obs[9])/0.1] ## Se obtiene y reescala la informacion de los obstaculos 
 		r = [obs[10]/0.1 , obs[11]/0.1 , obs[12]/0.1 , obs[13]/0.1 , obs[14]/0.1]
 		for i in range(len(x)):  
-			matriz[int(x[i])][int(y[i])] = 1    ##La matriz representa el mapa con 0 en espacio libre y 1 en 
+			matriz[int(x[i])][int(y[i])] = 1    ##La matriz representa el mapa con 0 para espacio libre y 1 para celdas ocupadas por un obstaculo 
 			for j in range(int(x[i]-r[i]-robot)-1, int(x[i]+r[i]+robot)): ##Para cada obstaculo se verifica la vecindad de celdas que pueden tener parte del obstaculo
-				for k in range(int(y[i]-r[i]-robot)-1, int(y[i]+r[i]+robot)):
+				for k in range(int(y[i]-r[i]-robot)-1, int(y[i]+r[i]+robot)): #Se tiene en cuenta el tamaño del robot (se inflan los obstaculos)
 					dist = np.linalg.norm(np.array([x[i],y[i]]) - np.array([j+0.5,k+0.5]))
 					if dist <= r[i]+robot:
 						matriz[j][k] = 1
 						x.append(j)
 						y.append(k)
-		xplot = list(map(lambda x: -5 + (0.1*x), x))
+		xplot = list(map(lambda x: -5 + (0.1*x), x)) ##Variables que permiten graficar los obstaculos adecuadamente
 		yplot = list(map(lambda x: -5 + (0.1*x), y))
 		'''for i in range(500):
 			for j in range(500):
 				print(matriz[i][j]),
 			print""	'''
 		if (bandera):
-			return False
+			return False		##Esta funcion corre en un hilo que es posible detener con la tecla esc, la bandera infoma que esta tecla se presiono
 		time.sleep(0.2)
 		
-def grafo():
+def grafo(): ##Funcion para crear el grafo de la escena 
 	global matriz, bandera
-	time.sleep(3)
-	dot = Digraph(comment = 'Mapa')
+	time.sleep(3)  ##Se hace una espera para garantizar que la informacion este adecuadamente actualizada
+	dot = Digraph(comment = 'Mapa') ##Se crea un grafo de la escena 
 	for i in range(50,105,5):
-		for j in range(50,105,5):
+		for j in range(50,105,5):### Se recorre la matriz creada en intervalos de 0.5m creando nodos
 			if (matriz[i][j] == 0):
 				dot.node(str(i)+","+str(j) , str(-5+(0.1*i))+","+str(-5+(0.1*j)))
-	for i in range(50,100,5):
+	for i in range(50,100,5): ## Se crean los arcos a partir de si las celdas se encuentran disponibles o no
 		for j in range(50,100,5):
 			for k in range(i-5,i+10,5):
 				for m in range(j-5,j+10,5):
 					if (matriz[i][j] == 0 and matriz[k][m] == 0 and k >= 50 and k <= 100 and m >= 50 and m <= 100 and not ((abs(k-i) + abs(m-j))==0)):
 						dot.edge(str(i)+","+str(j) , str(k)+","+str(m))
-	dot.render('src/Taller3_6/taller3_6/results/grafoPunto2.gv', view=True) 
+	dot.render('src/Taller3_6/taller3_6/results/grafoPunto2.gv', view=True)  ##Se muestra el grafo creado
 				
 
-def plotMap():
+def plotMap(): ##Hilo que grafica el mapa de la escena 
 	global xplot, yplot, bandera
 	while True:
 		plt.clf()
@@ -79,12 +79,12 @@ def plotMap():
 			return False
 		plt.pause(0.8)
 		
-def ThreadInputs():
+def ThreadInputs(): ##Lectura del teclado para permitir detener los hilos creados
 	with Listener(on_press = keypress) as listener:
 		listener.join()
 		
 def keypress(key):
-	global vel, bandera
+	global bandera
 	if key == Key.esc:
 		bandera = True 	##Se usa la tecla Esc para terminar los diferentes hilos implementados
 		return False
@@ -93,13 +93,13 @@ def keypress(key):
 if __name__ == '__main__':
 	global xplot, yplot, obs, bandera, matriz
 	xplot = [0]
-	yplot = [0]
+	yplot = [0]   ##Inicializacion de las variables
 	obs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 	bandera = False
 	matriz = [[0  for i in range(500)]for j in range(500)]
 	try:
 		threading.Thread(target=ThreadInputs).start()
-		threading.Thread(target=plotMap).start()
+		threading.Thread(target=plotMap).start()			##Creacion de los hilos necesarios para que le mapa se actualice en tiempo real
 		threading.Thread(target=crearCuadricula).start()
 		arrancar()
 	except rospy.ServiceException:
