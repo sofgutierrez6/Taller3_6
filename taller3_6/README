@@ -26,4 +26,15 @@ EJECUCION
        		 options   : Nombre del mapa si se elige Challenge 
 Para el inciso a:  Correr
 		rosrun pacman pacman_world --c mediumCorners
+
+Punto 2
+
+PARA EJECUTAR:
+	5. Abrir una nueva terminal
+	6. Usando cd llegar a la carperta que contiene el ejecutable de V-REP
+	7. Correr V-REP y abrir la escena 'EscenaTaller3P2' disponible en resources
+	8. Iniciar la simulacion presionando el boton play
+	9. Abrir una nueva terminal 
+	10. Usando cd llegar a la carpeta catkin_ws y ejecutar source devel/setup.bash
+	11. Durante la ejecucion es posible detener el programa en cualquier momento presionando la tecla Esc y presionando ctrl + C en la terminal que ejecuta el nodo
 	

@@ -87,7 +87,7 @@ def guardarCookies(data):
 			#Tambien se guardan en la matriz
 			matriz[-data.cookiesPos[i].y - mapa.minY][data.cookiesPos[i].x - mapa.minX] = "."
 			#cookiesYa es una bandera que permite cargarsolamente una vez las galletas
-			cookiesYa = False
+			cookiesYa = True
 
 ##Metodo convertir matriz en grafo
 def grafo():
@@ -97,7 +97,7 @@ def grafo():
 			nodoActual = nodeList[j][i]
 			#Se verifica si es un espacio libre o una galleta
 			if (matriz[j][i] == " " or matriz[j][i] == "."):
-				#Se verifican si los nodos adyacentes están libres o son una galleta, en dicho caso es una casilla factible por lo tanto se agregan a los vecino
+				#Se verifican si los nodos adyacentes estan libres o son una galleta, en dicho caso es una casilla factible por lo tanto se agregan a los vecino
 				if (j+1 < dimY and (matriz[j+1][i] == " " or matriz[j+1][i] == ".")):
 					nodoActual.agregarVecinos(nodeList[j+1][i])
 				if (i+1 < dimX and (matriz[j][i+1] == " " or matriz[j][i+1] == ".")):
@@ -119,7 +119,7 @@ def dijkstra():
 		nextList = queue.PriorityQueue(dimX*dimY)
 		#Se agrega el nodo actual a la cola de prioridad
 		nextList.put((0,actual))
-		#El objetivo será la galleta más cercana
+		#El objetivo sera la galleta mas cercana
 		actual_goal = masCercana()
 		#Diccionario con entrada nodo que devulve el nodo de donde vino
 		came_from = {}
@@ -135,7 +135,7 @@ def dijkstra():
 			tupla = nextList.get()
 			#Se obtiene el siguiente nodo
 			actual = tupla[1]
-			#Se verifica si ya llegó al objetivo, en caso de que si se termina el método
+			#Se verifica si ya llego al objetivo, en caso de que si se termina el metodo
 			if (actual.darY() == actual_goal.darX() and actual.darX() == actual_goal.darY()):
 				break
 			#Se exploran los vecinos
@@ -201,7 +201,7 @@ def moverPacman():
 	for	j in range(len(nextNode)-1):
 		sig = nextNode[j+1]
 		act = nextNode[j]
-		#Si las posiciones act y sig son iguales significa que llegó
+		#Si las posiciones act y sig son iguales significa que llego
 		while (posActX != sig.darX() or posActY != sig.darY()):
 			#Se realiza la logica de movimientos dependiendo de las coordenadas
 			if(sig.darX() == act.darX()):
