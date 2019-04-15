@@ -5,7 +5,8 @@ from geometry_msgs.msg import Twist
 from pynput.keyboard import Key, Listener 
 import matplotlib.pyplot as plt
 import threading
-import sys 
+import sys
+from pylab import *
 
 pub = rospy.Publisher('/motorsVel', Float32MultiArray, queue_size=10) ## publicador de las velocidades de los motores
 
@@ -14,7 +15,8 @@ def arrancar(): ### Metodo que inicia el nodo y solicita los argumentos del sist
 	global vel ## la variable vel guarda la velocidad ingresada por el usuario
 	rospy.init_node('punto3a', anonymous = True)
 	rospy.myargv(argv=sys.argv)
-	rospy.Subscriber('/pioneerPosition', Twist ,vecto) ## Se suscribe al topico que publica la posicion del robot llamando al metodo vecto
+	rospy.Subscriber('/pioneerPosition', Twist ,vecto)
+	rospy.Subscriber('/scanner', Float32MultiArray, scanner) ## Se suscribe al topico que publica la posicion del robot llamando al metodo vecto
 	vel = int(sys.argv[1]) 
 	try:
 		tasa = rospy.Rate(10)
@@ -58,11 +60,23 @@ def ThreadInputs():
 	with Listener(on_press = keypress, on_release = keydown) as listener:
 		listener.join()  ##Thread para leer teclado
 
+def scanner(data):
+	global scannerX, scannerY, posix, posiy
+	scannerX = []
+	scannerY = []
+	for i in range(0,len(data.data),2):
+		x = (math.cos(data.data[i])*data.data[i+1]) + posix
+		y = (math.sin(data.data[i])*data.data[i+1]) + posiy
+		scannerX.append(x)
+		scannerY.append(y)
+		
+
 def plotPos(): ##Funcion que realiza el plot de la posicion del robot
-	global posix, posiy, bandera
+	global posix, posiy, bandera, scannerX, scannerY
 	while not bandera: ##Mientras no se haya presionado Esc
 		plt.clf() 
 		plt.plot(posix,posiy, 'p')
+		plt.plot(scannerX,scannerY,'p')
 		plt.ylabel('Posicion en y') ##Grafico la posicion del robot esperando 0.5 segundos entre cada grafica
 		plt.xlabel('Posicion en x')
 		plt.title('Posicion del robot')
@@ -73,8 +87,10 @@ def plotPos(): ##Funcion que realiza el plot de la posicion del robot
 		return False
 
 if __name__ == '__main__':
-	global bandera, posix, posiy, vec
+	global bandera, posix, posiy, vec, scannerX, scannerY
 	vec = [0,0]
+	scannerX = [0]
+	scannerY = [0]
 	posix = 0
 	posiy = 0  ##Se inicializan las variables con el fin de evitar errores y la bandera en False dado que no se ha presionado Esc
 	bandera = False

@@ -55,4 +55,4 @@ class nodo:
 		self.visitado = visitado
         
     def esObjetivo(self, objetivo):
-		self.objetivo = objetivo       
+		self.objetivo = objetivo
