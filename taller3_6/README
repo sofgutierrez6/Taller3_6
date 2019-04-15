@@ -30,11 +30,22 @@ Para el inciso a:  Correr
 Punto 2
 
 PARA EJECUTAR:
+Previamente es necesario instalar graphviz, threaded, matplotlib y usando pip. Para eso, escribir una terminal
+	pip install graphviz --user
+	pip install threaded --user
+	pip install matplotlib --user
+	pip install pynput --user
+
 	5. Abrir una nueva terminal
 	6. Usando cd llegar a la carperta que contiene el ejecutable de V-REP
 	7. Correr V-REP y abrir la escena 'EscenaTaller3P2' disponible en resources
-	8. Iniciar la simulacion presionando el boton play
+	8. Iniciar la simulacion de V-REP presionando el boton play
 	9. Abrir una nueva terminal 
 	10. Usando cd llegar a la carpeta catkin_ws y ejecutar source devel/setup.bash
-	11. Durante la ejecucion es posible detener el programa en cualquier momento presionando la tecla Esc y presionando ctrl + C en la terminal que ejecuta el nodo
-	
+	11. Dependiendo de que literal se desee ejecutar:
+		Usar rosrun taller3_6 punto2b.py para ejecutar el punto 2b
+		Usar rosrun taller3_6 punto2c.py <xfin> <yfin> <thetafin> para ejecutar el punto 2c
+		Usar rosrun taller3_6 punto2e.py para <xfin> <yfin> <thetafin> ejecutar el punto 2e
+		Donde <xfin> <yfin> <thetafin> representan la posicion final del robot en el marco global de referencia
+	12. Durante la ejecucion es posible detener el programa en cualquier momento presionando la tecla Esc y presionando ctrl + C en la terminal que ejecuta el nodo
+
