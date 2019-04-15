@@ -1,42 +1,29 @@
-#punto 1
-				
+##Taller 3 Instrucciones
+Para correr todos los items de cada punto es necesario:
 COMPILACION
-	- cd ~/catkin_ws/src
-	- cd ..
-	- source devel/setup.bash
-	- catkin_make
+	1. Abrir un terminal
+	2. Correr "roscore"
+	3. Abrir otro terminal
+	4. Correr 
+		cd catkin_ws
+		catkin_make
+		chmod +x *
+		cd ..
+		cd ..
+		cd ..
+		source devel/setup.bash
 	
+Punto 1	
+
 EJECUCION
-
-El nodo punto consiste en 
-in the same machine as the pacman_world or in a different machine in a local network. In Game Mode, a graphic user interface allows the user to select a map and start playing using a button. The actions of Pac-Man can be controlled using the wasd keys from the keyboard. This mode is only made to play.
-
-There are two ways to execute the pacman_world node.
- 1) By executing it directly in one machine as a traditional ROS node and
- 2) Using a bash script. The first option requires the user to independently run a roscore process, source the setup.bash and run the pacman_world node using the rosrun command with the required parameters. The second option, automatically run the roscore process (if it is not already running), it sources the setup.bash file and receives the arguments of the node as inputs by the user.
-
-TRADICIONAL EJECUCION
-	- Abrir un nuevo terminal
-	- Correr: roscore
-	- Abrir un nuevo terminal
-	- Correr: source devel/setup.bash
-	- Uso: rosrun pacman pacman_world [pacmanMode] {options}
+	Para correr los mapas es necesario>
+	5 Abrir otro terminal
+	6. Correr rosrun pacman pacman_world [pacmanMode] {options}
        		 
-       		 pacmanMode: Parameter that specifies the mode
-                   		 --c: Challenge mode
-                   	 	 --g: Game mode
-       		 options   : Optional arguments
-                   	     mapName: Name of map to play. Only needed in Challenge mode 
-                   		 --m: If used, runs the game with without sound 
-                   		 
-	- Example 1. Challenge Mode in originalClassic map with no mute argument:
-		 rosrun pacman pacman_world --c originalClassic
-	- Example 2. Game Mode with no mute argument
-		 rosrun pacman pacman_world --g
-	- Example 3. Challenge Mode in bigMaze map with mute argument
-		 rosrun pacman pacman_world --c bigMaze --m
-	- In Challenge Mode, a controller node must be executed to control Pac-Man: See https://github.com/carlosquinterop/pacman-controller for an example
-
-NETWORK (SCRIPT) EXECUTION
-	-cd ~/catkin_ws/src/ros-pacman
-	-source startPacmanServer.sh
+       		 pacmanMode: Parametro que especifica el modo
+                   		 --c: Challenge 
+                   	 	 --g: Game 
+       		 options   : Nombre del mapa si se elige Challenge 
+Para el inciso a:  Correr
+		rosrun pacman pacman_world --c mediumCorners
+	
