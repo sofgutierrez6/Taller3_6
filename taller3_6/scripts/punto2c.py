@@ -15,24 +15,26 @@ r = 0.0925	##Radio de las ruedas del Pioneer obtenidas en el manual en m
 l = 0.1900	##Distancia entre la rueda y el punto con el que se modela el robot en m
 J1 = np.array([[1,0,l],[1,0,-l]]) 
 inv_J2 = np.array([[1.0/r,0],[0,1.0/r]])
-pub = rospy.Publisher('/motorsVel', Float32MultiArray, queue_size=10) 
-
+pub = rospy.Publisher('/motorsVel', Float32MultiArray, queue_size=10) #Se define que se publica en el topico de velocidad de las ruedas del motor
+#Metodo que hace todas las suscripciones a los topicos y toma los valores entrados por parametro en la terminal
 def arrancar():
 	global xfin, yfin, thetafin
+	#Suscripcion a topicos de ros
 	rospy.init_node('punto2c', anonymous = True)
 	rospy.Subscriber('/obstacles', Float32MultiArray ,obstacles)
 	rospy.Subscriber('/pioneerPosition', Twist ,vecto)
 	tasa = rospy.Rate(10)
 	rospy.myargv(argv=sys.argv)
 	try:
-		xfin = float(sys.argv[1])
-		yfin = float(sys.argv[2])
-		thetafin = float(sys.argv[3])
+		xfin = float(sys.argv[1]) #Coordenada x entrada en la terminal
+		yfin = float(sys.argv[2]) #Coordenada y entrada en la terminal
+		thetafin = float(sys.argv[3]) #Angulo entrado en la terminal
 	except:    								##Tratamiento de los argumentos ingresador por el usuario
 		xfin = 40
 		yfin = 40
 		thetafin = math.pi/2
 	time.sleep(1)
+	#Se crean la cuadricula con las celdas para representar el mapa de V-rep
 	crearCuadricula()
 	threading.Thread(target=control).start()
 	threading.Thread(target=plotPos).start()
@@ -42,7 +44,7 @@ def arrancar():
 			publicar()
 	except rospy.ServiceException as e:
 		pass
-		
+#Metodo que obtiene las coordenadas de los obstaculos del topcio de ros		
 def obstacles(data):	
 	global obs
 	obs = data.data
@@ -50,12 +52,12 @@ def obstacles(data):
 def publicar():
 	global vec
 	pub.publish(data = [vec[1],vec[0]])
-
+#Metodo que crea la cuadricula que representa el mapa de V-rep
 def crearCuadricula():
 	global obs, matriz, matNod, xplot, yplot
-	x = [(5 + obs[0])/0.25 , (5 + obs[1])/0.25 , (5 + obs[2])/0.25 , (5 + obs[3])/0.25 , (5 + obs[4])/0.25]
-	y = [(5 + obs[5])/0.25 , (5 + obs[6])/0.25 , (5 + obs[7])/0.25 , (5 + obs[8])/0.25 , (5 + obs[9])/0.25]
-	r = [obs[10]/0.25 , obs[11]/0.25 , obs[12]/0.25 , obs[13]/0.25 , obs[14]/0.25]
+	x = [(5 + obs[0])/0.25 , (5 + obs[1])/0.25 , (5 + obs[2])/0.25 , (5 + obs[3])/0.25 , (5 + obs[4])/0.25]#Posicion del obstaculo en x teniendo en cuenta tamaño del robot y una tolerancia
+	y = [(5 + obs[5])/0.25 , (5 + obs[6])/0.25 , (5 + obs[7])/0.25 , (5 + obs[8])/0.25 , (5 + obs[9])/0.25]#Posicion del obstaculo en y teniendo en cuenta tamaño del robot y una tolerancia
+	r = [obs[10]/0.25 , obs[11]/0.25 , obs[12]/0.25 , obs[13]/0.25 , obs[14]/0.25]#Tamano de los obstaculos teneindo en cuenta tamaño del robot
 	for i in range(len(x)):
 		matriz[int(x[i])][int(y[i])] = 1
 		for j in range(int(x[i]-r[i]-robot)-1, int(x[i]+r[i]+robot+1)):
@@ -65,6 +67,7 @@ def crearCuadricula():
 					matriz[j][k] = 1
 					x.append(j)
 					y.append(k)
+	#Se agregan las celdas vecinas con la posicion actual del robot 				
 	for nod in matNod:
 		for nod2 in nod:
 			posN = nod2.pos
@@ -74,9 +77,9 @@ def crearCuadricula():
 						if (indice >= 0 and indice <= 199 and ja >= 0 and ja <= 199):
 							if (matriz[ja][indice] == 0 and not ((abs(indice - posN[0]) + abs(ja - posN[1])) == 0)):
 								nod2.agregarVecinos(matNod[ja][indice])
-	xplot = list(map(lambda x: -5 + (0.25*x), x))
+	xplot = list(map(lambda x: -5 + (0.25*x), x))# Definición de los vectores x, y para graficar
 	yplot = list(map(lambda x: -5 + (0.25*x), y))
-
+#Se crea la clase nodo y se definene los metodos correspondientes
 class Nodo:
 	def __init__(self, pos):
 		self.pos = pos
@@ -88,26 +91,26 @@ class Nodo:
 		self.visitado = False
 		self.padre = None
 		self.h = 100000000
-		
+	#Metodo que define la heuristica con la posicion que entra por parametro	
 	def defHeu(self, pos_f):
 		self.h = math.sqrt((self.coord[0]-pos_f[0])**2 + (self.coord[1]-pos_f[1])**2) 
 		return self.h
-		
+	#Metodo que asigna el nodo padre del nodo que llama este metodo	
 	def asignarPadre(self, padre):
 		self.padre = padre
-	
+	#Metodo que cambia el costo del nodo 
 	def cambiarCosto(self, costo):
 		self.costo = costo
-	
+	#Metodo que agrega a la lista de vecinnos el nodo que llame al metodo
 	def agregarVecinos(self, vecino):
 		self.vecinos.append(vecino)
-		
+	#Metodo que define que el nodo que llama al metodo es el actual	
 	def esActual(self, visitado):
 		self.visitado = visitado
-		
+	#Metodo que define que el nodo que llama al metodo es el objetivo	
 	def esObjetivo(self, objetivo):
 		self.objetivo = objetivo
-		
+#Metodo para el algoritmo de A estrella		
 def Astar():
 	global bandera, xfin, yfin, posix, posiy, matNod
 	for fil in matNod:
@@ -150,13 +153,13 @@ def Astar():
 
 def R(theta): ##funcion que retorna la matriz de rotacion
 	return np.array([[math.cos(theta),math.sin(theta),0],[-math.sin(theta),math.cos(theta),0],[0,0,1]])
-
+#Metodo que busca el nodo en la matriz de nodo con las posciones que le entran por paramtero
 def buscarNodo(x,y):
 	global matNod
 	a = int(round((5 + x)/0.25))
 	b = int(round((5 + y)/0.25))
 	return matNod[a][b]
-				
+#Metodo que busca un mejor nodo que el que llama al metodo partiendo del costo actual devuelve el mejor nodo				
 def buscarMejor(nodos):
 	cost = 10000000
 	best = None
@@ -165,7 +168,7 @@ def buscarMejor(nodos):
 			cost = nod.costo
 			best = nod
 	return best
-
+#Metodo que realiza la cinematica inversa del robot 
 def control():
 	global posix, posiy, lastheta, vec, xfin, yfin, thetafin, bandera
 	rho = 10
