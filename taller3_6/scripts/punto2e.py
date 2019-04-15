@@ -1,9 +1,5 @@
 #!/usr/bin/python
-
-
-
 """ librerias usadas"""
-
 import rospy
 from std_msgs.msg import Float32MultiArray, Float32
 from geometry_msgs.msg import Twist
@@ -17,21 +13,20 @@ import random
 import math
 import copy
 
-robot = 2
-show_animation = True
+robot = 2 ##Tamano del robot en la celdas usadas 
 
-r = 0.0925	##Radio de las ruedas del Pioneer obtenidas en el manual en m
-l = 0.1900	##Distancia entre la rueda y el punto con el que se modela el robot en m
+r = 0.0925	##Radio de las ruedas del Pioneer obtenidas en el manual en metros
+l = 0.1900	##Distancia entre la rueda y el punto con el que se modela el robot en metros
 J1 = np.array([[1,0,l],[1,0,-l]]) 
-inv_J2 = np.array([[1.0/r,0],[0,1.0/r]])
-pub = rospy.Publisher('/motorsVel', Float32MultiArray, queue_size=10) 
+inv_J2 = np.array([[1.0/r,0],[0,1.0/r]]) ##Matrices usadas para el control del robot
+pub = rospy.Publisher('/motorsVel', Float32MultiArray, queue_size=10) ##publicador para controlar el robot
 
 
 def arrancar():
 	global xfin, yfin, thetafin, obstacleList, path, obs
-	rospy.init_node('punto2e', anonymous = True)
-	rospy.Subscriber('/obstacles', Float32MultiArray , obstacles)
-	rospy.Subscriber('/pioneerPosition', Twist ,vecto)
+	rospy.init_node('punto2e', anonymous = True)  ##Inicio del nodo
+	rospy.Subscriber('/obstacles', Float32MultiArray , obstacles)  ##Se suscribe al topico que da informacion sobre posicion y tamaño de los obstaculos
+	rospy.Subscriber('/pioneerPosition', Twist ,vecto)  ##Se suscribe al topico que otorga la informacion sobre la posicion del Pioneer
 	tasa = rospy.Rate(10)
 	rospy.myargv(argv=sys.argv)
 	try:
@@ -42,17 +37,17 @@ def arrancar():
 		xfin = 2.5
 		yfin = 2.5
 		thetafin = math.pi/2
-	time.sleep(1)
+	time.sleep(1) ##Pausa para asegurar que los datos estan adecuadamente actualizados	
 	obstacleList = [
 	(obs[0],obs[5],(2*obs[10])+0.4), 
 	(obs[1],obs[6],(2*obs[11])+0.4),
-	(obs[2],obs[7],(2*obs[12])+0.4), 
+	(obs[2],obs[7],(2*obs[12])+0.4), 				###Creacion de los obstaculos
 	(obs[3],obs[8],(2*obs[13])+0.4),
 	(obs[4],obs[9],(2*obs[14])+0.4)
 	]  # [x,y,size]
-	rrt = RRT(start=[0, 0], goal=[xfin, yfin],randArea=[-5, 45], obstacleList=obstacleList)
-	path = rrt.Planning()
-	crearCuadricula()
+	rrt = RRT(start=[0, 0], goal=[xfin, yfin],randArea=[-5, 45], obstacleList=obstacleList)  ##Creaci´on del objeto rrt
+	path = rrt.Planning()		##Calculo de la ruta a partir del punto ingresado por el usuario
+	crearCuadricula()			##Se crea la cuadricula para permitir graficar los obstaculos
 	threading.Thread(target=plotPos).start()
 	threading.Thread(target=control).start()
     # Draw final path
