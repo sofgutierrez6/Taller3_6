@@ -83,7 +83,7 @@ def guardarCookies(data):
 		for i in range(data.nCookies):
 			#cookies.put(Nodo([data.cookiesPos[i].x,data.cookiesPos[i].y],True))
 			cookies.append(Nodo([-data.cookiesPos[i].y - mapa.minY , data.cookiesPos[i].x - mapa.minX]))
-			print data.cookiesPos[i].x - mapa.minX, -data.cookiesPos[i].y - mapa.minY , 
+			#print data.cookiesPos[i].x - mapa.minX, -data.cookiesPos[i].y - mapa.minY , 
 			#Tambien se guardan en la matriz
 			matriz[-data.cookiesPos[i].y - mapa.minY][data.cookiesPos[i].x - mapa.minX] = "."
 			#cookiesYa es una bandera que permite cargarsolamente una vez las galletas
@@ -150,11 +150,13 @@ def dijkstra():
 					nextList.put((newCost,next))
 					#Se pone de donde vino
 					came_from[next] = actual
-	
+					
+#Metodo que dependiendo las cordenadas devuelve el nodo buscado	
 def buscarNodo(x,y):
 	global mapa 
 	return nodeList[y][x]
 
+#Metodo que devuelve la galleta mas cercana
 def masCercana():
 	global posActX, posActY, cookies, dimX, dimY
 	dist = dimX + dimY
@@ -166,29 +168,42 @@ def masCercana():
 			dist = Ndist
 	return cookies.pop(pos)
 
-
+#Metodo que calcula y publica los movimientos del pacman
 def moverPacman():
 	global came_from, actual, posActX, posActY
 	#Lista para reconstruir la ruta
 	nextNode = []
+	#Se agrega el nodo actual 
 	nextNode.append(actual)
+	
+	#print '_______Nuevo objetivo_______'
+	#print actual.darX(), actual.darY()
+	#print actual_goal.darX(), actual_goal.darY()
+	
 	#Se reconstruye la ruta
-	print '_______Nuevo objetivo_______'
-	print actual.darX(), actual.darY()
-	print actual_goal.darX(), actual_goal.darY()
 	while came_from[actual] != None:
+		#Actual es el ultimo nodo
 		actual = nextNode[-1]
+		#Se guarda de donde viene actual
 		anterior = came_from[actual]
 		if (anterior != None):
-			print actual.darX(), actual.darY()
+			#print actual.darX(), actual.darY()
+			#Se agrega a la lista de siguientes
 			nextNode.append(anterior)
+			
+	#Diccionario con los numeros a publicar para el movimiento del pacman
+	mensajes = {'left':3, 'up':0, 'down':1, 'right':2, 'nada':4}
+	#Movimiento a publicar
 	move = 'nada'
+	#Cmo la lista se construyo al contrario es necesario invertir el orden
 	nextNode.reverse()
+	#Se recorre la lista de nodos siguientes
 	for	j in range(len(nextNode)-1):
 		sig = nextNode[j+1]
 		act = nextNode[j]
+		#Si las posiciones act y sig son iguales significa que llegó
 		while (posActX != sig.darX() or posActY != sig.darY()):
-			#Revisar movimientos en la matriz
+			#
 			if(sig.darX() == act.darX()):
 				if(sig.darY() > act.darY()):
 					move = 'down'
@@ -208,7 +223,7 @@ def moverPacman():
 			mensajes = {'left':3, 'up':0, 'down':1, 'right':2, 'nada':4}
 			action = int(mensajes[move])
 			pub.publish(action)
-	mensajes = {'left':3, 'up':0, 'down':1, 'right':2, 'nada':4}
+
 	action = int(mensajes[move])
 	pub.publish(action)
 
