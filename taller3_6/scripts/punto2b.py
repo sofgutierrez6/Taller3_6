@@ -32,9 +32,9 @@ def crearCuadricula(): ##Metodo para crear la matriz que representa el mapa de l
 		x = [(5+obs[0])/0.1 , (5+obs[1])/0.1 , (5+obs[2])/0.1 , (5+obs[3])/0.1 , (5+obs[4])/0.1]
 		y = [(5+obs[5])/0.1 , (5+obs[6])/0.1 , (5+obs[7])/0.1 , (5+obs[8])/0.1 , (5+obs[9])/0.1] ## Se obtiene y reescala la informacion de los obstaculos 
 		r = [obs[10]/0.1 , obs[11]/0.1 , obs[12]/0.1 , obs[13]/0.1 , obs[14]/0.1]
-		for i in range(len(x)):  ##Para cada obstaculo
-			matriz[int(x[i])][int(y[i])] = 1   
-			for j in range(int(x[i]-r[i]-robot)-1, int(x[i]+r[i]+robot)):
+		for i in range(len(x)):  
+			matriz[int(x[i])][int(y[i])] = 1    ##La matriz representa el mapa con 0 en espacio libre y 1 en 
+			for j in range(int(x[i]-r[i]-robot)-1, int(x[i]+r[i]+robot)): ##Para cada obstaculo se verifica la vecindad de celdas que pueden tener parte del obstaculo
 				for k in range(int(y[i]-r[i]-robot)-1, int(y[i]+r[i]+robot)):
 					dist = np.linalg.norm(np.array([x[i],y[i]]) - np.array([j+0.5,k+0.5]))
 					if dist <= r[i]+robot:
