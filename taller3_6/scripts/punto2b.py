@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 import threading
 import time
 
-robot = 0
+robot = 0  ##Tamano del robot en las celdas estimadas, se fijo en cero para observar mas claramente los obstaculos 
 #Metodo de inicializacion 
 def arrancar():
-	rospy.init_node('punto2b', anonymous = True)
-	rospy.Subscriber('/obstacles', Float32MultiArray ,obstacles)
-	tasa = rospy.Rate(10)
-	grafo()
+	rospy.init_node('punto2b', anonymous = True) ##Se inicia el nodo
+	rospy.Subscriber('/obstacles', Float32MultiArray ,obstacles)  ##Se suscribe el nodo al topico que publica las posiciones y tamanos de los obtaculos
+	tasa = rospy.Rate(10) ##Tasa de refresco de la informacion
+	grafo()  ### Se crea el grafo de la escena a partir de la division de celdas
 	try:
 		while not rospy.is_shutdown():
 			tasa.sleep()
@@ -22,19 +22,18 @@ def arrancar():
 		pass
 		
 def obstacles(data):
-	global obs
+	global obs   ## En la variable obs se guardan la posicion y tamano de los obstaculos recibidos de la simulacion
 	obs = data.data
 	
-def crearCuadricula():
-	global obs, xplot, yplot, matriz
+def crearCuadricula(): ##Metodo para crear la matriz que representa el mapa de la escena
+	global obs, xplot, yplot, matriz 
 	while True:
-		matriz = [[0  for i in range(500)]for j in range(500)]
-		#Se obtienen las posiciones del 
+		matriz = [[0  for i in range(500)]for j in range(500)] ##Se divide el mapa en celdas de 0.1m 
 		x = [(5+obs[0])/0.1 , (5+obs[1])/0.1 , (5+obs[2])/0.1 , (5+obs[3])/0.1 , (5+obs[4])/0.1]
-		y = [(5+obs[5])/0.1 , (5+obs[6])/0.1 , (5+obs[7])/0.1 , (5+obs[8])/0.1 , (5+obs[9])/0.1]
+		y = [(5+obs[5])/0.1 , (5+obs[6])/0.1 , (5+obs[7])/0.1 , (5+obs[8])/0.1 , (5+obs[9])/0.1] ## Se obtiene y reescala la informacion de los obstaculos 
 		r = [obs[10]/0.1 , obs[11]/0.1 , obs[12]/0.1 , obs[13]/0.1 , obs[14]/0.1]
-		for i in range(len(x)):
-			matriz[int(x[i])][int(y[i])] = 1
+		for i in range(len(x)):  ##Para cada obstaculo
+			matriz[int(x[i])][int(y[i])] = 1   
 			for j in range(int(x[i]-r[i]-robot)-1, int(x[i]+r[i]+robot)):
 				for k in range(int(y[i]-r[i]-robot)-1, int(y[i]+r[i]+robot)):
 					dist = np.linalg.norm(np.array([x[i],y[i]]) - np.array([j+0.5,k+0.5]))
